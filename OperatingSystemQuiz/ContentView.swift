@@ -73,11 +73,14 @@ struct TopicDetailView:View {
 }
 
 struct QuizView: View {
+    
     @Binding var currnetView:String?
     
     @State private var questionIndex=0
     @State private var score=0
     @State private var showScoreAlert=false
+    @State private var selectedAnswer:String?=nil
+    @State private var isAnswerCorrect:Bool?=nil
     
     let questions=[
         "What is Process?":["A program in execution","A stored file","A netwok request","A hardware device"],
@@ -91,8 +94,40 @@ struct QuizView: View {
                 let answers=questions[question]!
                 
                 Text("Question \(questionIndex+1)!")
+                    .font(.headline)
+                    .padding(.top)
                 
                 Text(question)
+                    .font(.title3)
+                    .padding()
+                    .multilineTextAlignment(.center)
+                
+                ForEach(answers, id:\.self){
+                    answer in
+                    Button(action:{
+                        selectedAnswer=answer
+                        if(question=="What is process?" && answer=="A program in exection") || (question=="What is virtual memory?" && answer=="A memory managemant technique"){
+                            isAnswerCorrect=true
+                            score+=1
+                        }else{
+                            isAnswerCorrect=false
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now()+1){
+                            questionIndex+=1
+                            selectedAnswer=nil
+                            isAnswerCorrect=nil
+                        }
+                    }){
+                        Text(answer)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(selectedAnswer==answer ? (isAnswerCorrect==true ? Color.green : Color.red) : Color.gray.opacity(0.2))
+                            .cornerRadius(10)
+                            .padding(.vertical,5)
+                            .foregroundColor(.black)
+                    }
+                }
+                
             }
         }
     }
