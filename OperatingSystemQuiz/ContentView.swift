@@ -8,12 +8,17 @@
 import SwiftUI
 
 struct ContentView: View {
-    
+    @State private var currentView:String? = "home"
     
     var body: some View {
         VStack {
-           
-            Text("Hello, world!")
+            if currentView=="home"{
+                HomeView(currentView: $currentView)
+            }
+            else if currentView=="Process"{
+                TopicDetailView(topic:"Process",description: "Process is the basic unit of execution in a computer system.",
+                                currentView: $currentView)
+            }
         }
         .padding()
     }
@@ -33,7 +38,7 @@ struct HomeView: View {
             }
             .font(.headline)
             .padding()
-            .background(.mint)
+//            .background(Color.mint)
             .foregroundColor(.black)
             .cornerRadius(10)
         }
@@ -54,6 +59,14 @@ struct TopicDetailView:View {
                 .font(.headline)
             Text(description)
                 .padding()
+            
+            Button("Back to Home Page"){
+                currentView="home"
+            }
+            .font(.headline)
+            .padding()
+            .foregroundColor(.black)
+            .cornerRadius(10)
         }
         .padding()
     }
