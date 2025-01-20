@@ -19,6 +19,9 @@ struct ContentView: View {
                 TopicDetailView(topic:"Process",description: "Process is the basic unit of execution in a computer system.",
                                 currentView: $currentView)
             }
+            else if currentView=="quiz"{
+                QuizView(currentView: $currentView)
+            }
         }
         .padding()
     }
@@ -38,7 +41,22 @@ struct HomeView: View {
             }
             .font(.headline)
             .padding()
-//            .background(Color.mint)
+            .foregroundColor(.black)
+            .cornerRadius(10)
+            
+            Button("Process"){
+                currentView="Process"
+            }
+            .font(.headline)
+            .padding()
+            .foregroundColor(.black)
+            .cornerRadius(10)
+            
+            Button("Process"){
+                currentView="Process"
+            }
+            .font(.headline)
+            .padding()
             .foregroundColor(.black)
             .cornerRadius(10)
         }
@@ -60,8 +78,8 @@ struct TopicDetailView:View {
             Text(description)
                 .padding()
             
-            Button("Back to Home Page"){
-                currentView="home"
+            Button("Take Quiz"){
+                currentView="quiz"
             }
             .font(.headline)
             .padding()
@@ -69,18 +87,20 @@ struct TopicDetailView:View {
             .cornerRadius(10)
         }
         .padding()
+//        .background(.mint)
     }
 }
 
 struct QuizView: View {
     
-    @Binding var currnetView:String?
+    @Binding var currentView:String?
     
     @State private var questionIndex=0
     @State private var score=0
-    @State private var showScoreAlert=false
+//    @State private var showScoreAlert=false
     @State private var selectedAnswer:String?=nil
     @State private var isAnswerCorrect:Bool?=nil
+    @State private var isAnswered=false
     
     let questions=[
         "What is Process?":["A program in execution","A stored file","A netwok request","A hardware device"],
@@ -105,32 +125,56 @@ struct QuizView: View {
                 ForEach(answers, id:\.self){
                     answer in
                     Button(action:{
-                        selectedAnswer=answer
+                        guard !isAnswered else { return }
+                        selectedAnswer = answer
+                            isAnswered = true
                         if(question=="What is process?" && answer=="A program in exection") || (question=="What is virtual memory?" && answer=="A memory managemant technique"){
                             isAnswerCorrect=true
                             score+=1
                         }else{
                             isAnswerCorrect=false
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now()+1){
+//                            .background(.mint)
+                        DispatchQueue.main.asyncAfter(deadline: .now()+2.0){
                             questionIndex+=1
                             selectedAnswer=nil
                             isAnswerCorrect=nil
+                            isAnswered=false
                         }
-                    }){
+                    })
+                    {
                         Text(answer)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(selectedAnswer==answer ? (isAnswerCorrect==true ? Color.green : Color.red) : Color.gray.opacity(0.2))
+                            .background(selectedAnswer==answer ? (isAnswerCorrect==true ? Color.green : Color.red) : nil)
                             .cornerRadius(10)
-                            .padding(.vertical,5)
                             .foregroundColor(.black)
                     }
+                    .cornerRadius(10)
+                    .disabled(isAnswered)
                 }
+            } else{
+                Text("Quiz Completed!")
+                    .font(.title)
+                    .padding()
                 
+                Text("Your score is: \(score)/\(questions.count)")
+                    .font(.headline)
+                    .padding()
+                
+                Button("Back to Home Page"){
+                    currentView="home"
+                }
+                .font(.headline)
+                .padding()
+                .foregroundColor(.black)
+                .cornerRadius(10)
             }
         }
+        .padding()
     }
+    
+    
 }
 
 #Preview {
