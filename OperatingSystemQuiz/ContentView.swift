@@ -19,6 +19,28 @@ struct ContentView: View {
     }
 }
 
+struct HomeView: View {
+    @Binding var currentView:String?
+    
+    var body: some View {
+        VStack {
+            Text("Operating Systems")
+                .padding()
+                .font(.largeTitle)
+            
+            Button("Process"){
+                currentView="Process"
+            }
+            .font(.headline)
+            .padding()
+            .background(.mint)
+            .foregroundColor(.black)
+            .cornerRadius(10)
+        }
+        .padding()
+    }
+}
+
 struct TopicDetailView:View {
     let topic:String
     let description:String
