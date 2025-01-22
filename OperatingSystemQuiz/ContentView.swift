@@ -188,10 +188,6 @@ struct QuizView: View {
                         .padding(.horizontal)
                     
                 }
-//                    if questions.isEmpty{
-//                        Text("Loading questions...")
-//                    }
-//                    else{
                         let question=Array(questions.keys)[questionIndex]
                         let answers=questions[question]!
                         
@@ -218,8 +214,6 @@ struct QuizView: View {
                                             }
 
                     }
-//                }
-//            }
             .padding()
             .onAppear{
                 startTimer()
@@ -261,13 +255,14 @@ struct QuizView: View {
     func nextQuestion() {
         if questionIndex+1>=questions.count {
             stopTimer()
+            finalScore=score
             currentView="endPage"
         }else{
             questionIndex+=1
             selectedAnswer = nil
             isAnswerCorrect = nil
             isAnswered=false
-            resetTimer()
+//            resetTimer()
         }
     }
     
