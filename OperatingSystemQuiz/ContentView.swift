@@ -209,49 +209,10 @@ struct QuizView: View {
                                         .foregroundColor(.black)
                                         .cornerRadius(10)
                 }
-                    
-                    
-//                    ForEach(answers, id:\.self){
-//                        answer in
-//                        Button(action:{
-//                            guard !isAnswered else { return }
-//                            selectOption(answer,for:question)
-//                            )}{
-//                                Text(answer)
-//                                    .padding()
-//                                    .frame(maxWidth: .infinity)
-//                                    .foregroundColor(.black)
-//                                    .font(.title3)
-//                                    .fontWeight(.bold)
-//                            }
-//                            .background(backgroundColor(for: answer))
-//                            .cornerRadius(10)
-//                            .padding(.horizontal,10)
-//                            .disabled(isAnswered)
-//                    }
-//                } else{
-//                    Text("Quiz Completed!")
-//                        .font(.title)
-//                        .padding()
-//                    
-//                    Text("Your score is: \(score)/\(questions.count)")
-//                        .font(.headline)
-//                        .padding()
-//                    
-//                    Button("Back to Home Page"){
-//                        currentView="home"
-//                    }
-//                    .font(.headline)
-//                    .padding()
-//                    .foregroundColor(.black)
-//                    .cornerRadius(10)
-//                }
             }
             .padding()
         }
-//        .padding()
-                               
-//        ConfettiCannon(counter: $confettiCounter,num:50,colors:[.red,.blue,.green],radius:300.0)
+        ConfettiCannon(trigger: $confettiCounter,num:50,colors:[.red,.blue,.green],radius:300.0)
     }
     
     func selectOption(_ option:String, for question:String){
