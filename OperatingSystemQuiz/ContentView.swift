@@ -10,6 +10,7 @@ import ConfettiSwiftUI
 
 struct ContentView: View {
     @State private var currentView:String? = "login"
+    @State private var finalScore:Int = 0
     
     var body: some View {
         VStack {
@@ -24,7 +25,10 @@ struct ContentView: View {
                                 currentView: $currentView)
             }
             else if currentView=="quiz"{
-                QuizView(currentView: $currentView)
+                QuizView(currentView: $currentView, finalScore: $finalScore)
+            }
+            else if currentView=="endPage"{
+                EndPageView(currentView: $currentView, score: finalScore)
             }
         }
         .padding()
@@ -145,6 +149,7 @@ struct TopicDetailView:View {
 struct QuizView: View {
     
     @Binding var currentView:String?
+    @Binding var finalScore:Int
     
     @State private var questionIndex=0
     @State private var score=0
@@ -163,62 +168,58 @@ struct QuizView: View {
     var body: some View{
         ScrollView{
             VStack{
-                if questionIndex<questions.count{
-                    let question=Array(questions.keys)[questionIndex]
-                    let answers=questions[question]!
-                    
-                    HStack{
-                        Text("Question \(questionIndex+1)!")
-                            .font(.headline)
-                            .padding(.top)
-                        Spacer()
-                        
-                        Text("Time remaining: \(timeRemaining) seconds")
-                            .font(.headline)
-                            .foregroundColor(timeRemaining<5 ? .red : .mint)
-                    }
-                    
-                    Text(question)
-                        .font(.title3)
-                        .padding()
-                        .multilineTextAlignment(.center)
-                    
-                    ForEach(answers, id:\.self){
-                        answer in
-                        Button(action:{
-                            guard !isAnswered else { return }
-                            selectOption(answer,for:question)
-                        }){
-                            Text(answer)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .foregroundColor(.black)
-                        }
-                        .background(backgroundColor(for: answer))
-                        .cornerRadius(10)
-                        .padding(.horizontal,10)
-                        .disabled(isAnswered)
-                    }
-                }
                 
-                else{
-                    Text("Quiz Completed!")
-                        .font(.title)
-                        .padding()
-                    
-                    Text("Your score is: \(score)/\(questions.count)")
-                        .font(.headline)
-                        .padding()
-                
-                    Button("Back to Home Page"){
-                        currentView="home"
-                    }
-                    .font(.headline)
+                Text("Quiz App")
+                    .font(.largeTitle)
                     .padding()
-                    .foregroundColor(.black)
-                    .cornerRadius(10)
+                
+                Spacer()
+                
+                HStack{
+                    Text("Time Remaining: \(timeRemaining)")
+                        .font(.headline)
+                        .foregroundColor(timeRemaining<5 ? .red : .mint)
+                        .padding()
+                    
+                    Spacer()
+                    
+                    Text("\(score)/\(questions.count)")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
                 }
-            }
+//                    if questions.isEmpty{
+//                        Text("Loading questions...")
+//                    }
+//                    else{
+                        let question=Array(questions.keys)[questionIndex]
+                        let answers=questions[question]!
+                        
+                        Text(question)
+                            .font(.title3)
+                            .padding()
+                            .multilineTextAlignment(.center)
+                        
+                            ForEach(answers, id:\.self){
+                                answer in
+                                Button(action:{
+                                    guard !isAnswered else { return }
+                                        selectOption(answer,for:question)
+                                                }){
+                                                    Text(answer)
+                                                        .padding()
+                                                        .frame(maxWidth: .infinity)
+                                                        .foregroundColor(.black)
+                                                }
+                                                .background(backgroundColor(for: answer))
+                                                .cornerRadius(10)
+                                                .padding(.horizontal,10)
+                                                .disabled(isAnswered)
+                                            }
+
+                    }
+//                }
+//            }
             .padding()
             .onAppear{
                 startTimer()
@@ -243,10 +244,7 @@ struct QuizView: View {
                                     isAnswerCorrect=false
                                 }
                                 DispatchQueue.main.asyncAfter(deadline: .now()+2){
-                                    questionIndex+=1
-                                    selectedAnswer=nil
-                                    isAnswerCorrect=nil
-                                    isAnswered=false
+                                    self.nextQuestion()
                                 }
                             }
                         }
@@ -263,6 +261,7 @@ struct QuizView: View {
     func nextQuestion() {
         if questionIndex+1>=questions.count {
             stopTimer()
+            currentView="endPage"
         }else{
             questionIndex+=1
             selectedAnswer = nil
@@ -292,6 +291,52 @@ struct QuizView: View {
         timer=nil
     }
 }
+
+
+
+struct EndPageView: View {
+    @Binding var currentView: String?
+    let score: Int
+
+    var body: some View {
+        VStack {
+            Text("🎉 Congratulations! 🎉")
+                .font(.largeTitle)
+                .padding()
+
+            Text("You completed the quiz!")
+                .font(.title)
+                .padding(.bottom)
+
+            Text("Your score: \(score)")
+                .font(.title2)
+                .padding()
+
+            HStack(spacing: 20) {
+                Button("Retake Quiz") {
+                    currentView = "quiz"
+                }
+                .font(.headline)
+                .padding()
+                .background(Color.mint)
+                .foregroundColor(.black)
+                .cornerRadius(10)
+
+                Button("Home") {
+                    currentView = "home"
+                }
+                .font(.headline)
+                .padding()
+                .background(Color.mint)
+                .foregroundColor(.black)
+                .cornerRadius(10)
+            }
+            .padding(.top)
+        }
+        .padding()
+    }
+}
+
 
 
 
