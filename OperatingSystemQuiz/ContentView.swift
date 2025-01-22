@@ -152,6 +152,8 @@ struct QuizView: View {
     @State private var isAnswerCorrect:Bool?=nil
     @State private var isAnswered=false
     @State private var confettiCounter:Int=0
+    @State private var timeRemaining=15
+    @State private var timer:Timer?=nil
     
     let questions=[
         "What is process?":["A program in execution","A stored file","A network request","A hardware device"],
@@ -165,9 +167,16 @@ struct QuizView: View {
                     let question=Array(questions.keys)[questionIndex]
                     let answers=questions[question]!
                     
-                    Text("Question \(questionIndex+1)!")
-                        .font(.headline)
-                        .padding(.top)
+                    HStack{
+                        Text("Question \(questionIndex+1)!")
+                            .font(.headline)
+                            .padding(.top)
+                        Spacer()
+                        
+                        Text("Time remaining: \(timeRemaining) seconds")
+                            .font(.headline)
+                            .foregroundColor(timeRemaining<5 ? .red : .mint)
+                    }
                     
                     Text(question)
                         .font(.title3)
@@ -193,24 +202,30 @@ struct QuizView: View {
                 }
                 
                 else{
-                                        Text("Quiz Completed!")
-                                            .font(.title)
-                                            .padding()
+                    Text("Quiz Completed!")
+                        .font(.title)
+                        .padding()
                     
-                                        Text("Your score is: \(score)/\(questions.count)")
-                                            .font(.headline)
-                                            .padding()
-                    
-                                        Button("Back to Home Page"){
-                                            currentView="home"
-                                        }
-                                        .font(.headline)
-                                        .padding()
-                                        .foregroundColor(.black)
-                                        .cornerRadius(10)
+                    Text("Your score is: \(score)/\(questions.count)")
+                        .font(.headline)
+                        .padding()
+                
+                    Button("Back to Home Page"){
+                        currentView="home"
+                    }
+                    .font(.headline)
+                    .padding()
+                    .foregroundColor(.black)
+                    .cornerRadius(10)
                 }
             }
             .padding()
+            .onAppear{
+                startTimer()
+            }
+            .onDisappear {
+                stopTimer()
+            }
         }
         ConfettiCannon(trigger: $confettiCounter,num:50,colors:[.red,.blue,.green],radius:300.0)
     }
@@ -243,6 +258,38 @@ struct QuizView: View {
             }
         }
         return Color.mint
+    }
+    
+    func nextQuestion() {
+        if questionIndex+1>=questions.count {
+            stopTimer()
+        }else{
+            questionIndex+=1
+            selectedAnswer = nil
+            isAnswerCorrect = nil
+            isAnswered=false
+            resetTimer()
+        }
+    }
+    
+    func startTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true){ _ in
+            if timeRemaining>0 {
+                timeRemaining-=1
+            }
+            else{
+                nextQuestion()
+            }
+        }
+    }
+    
+    func resetTimer() {
+        timeRemaining = 15
+    }
+    
+    func stopTimer() {
+        timer?.invalidate()
+        timer=nil
     }
 }
 
