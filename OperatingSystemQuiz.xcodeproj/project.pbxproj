@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		07975DB92D414B2E00222429 /* ConfettiSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 07975DB82D414B2E00222429 /* ConfettiSwiftUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		07CBBA532D3E611200214E53 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07975DB92D414B2E00222429 /* ConfettiSwiftUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = OperatingSystemQuiz;
 			packageProductDependencies = (
+				07975DB82D414B2E00222429 /* ConfettiSwiftUI */,
 			);
 			productName = OperatingSystemQuiz;
 			productReference = 07CBBA412D3E611100214E53 /* OperatingSystemQuiz.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 07CBBA382D3E611100214E53;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				07975DB72D414B2E00222429 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 07CBBA422D3E611100214E53 /* Products */;
 			projectDirPath = "";
@@ -583,6 +592,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		07975DB72D414B2E00222429 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/simibac/ConfettiSwiftUI";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		07975DB82D414B2E00222429 /* ConfettiSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 07975DB72D414B2E00222429 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */;
+			productName = ConfettiSwiftUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 07CBBA392D3E611100214E53 /* Project object */;
 }

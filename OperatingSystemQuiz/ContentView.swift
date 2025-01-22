@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ConfettiSwiftUI
 
 struct ContentView: View {
     @State private var currentView:String? = "login"
@@ -49,7 +50,6 @@ struct LoginView: View {
             
             TextField("Email", text: $email)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-//                .keyboardType(.emailAddress)
                 .padding()
             
             if !errorMessage.isEmpty{
@@ -96,21 +96,21 @@ struct HomeView: View {
             .foregroundColor(.black)
             .cornerRadius(10)
             
-            Button("Process"){
-                currentView="Process"
-            }
-            .font(.headline)
-            .padding()
-            .foregroundColor(.black)
-            .cornerRadius(10)
-            
-            Button("Process"){
-                currentView="Process"
-            }
-            .font(.headline)
-            .padding()
-            .foregroundColor(.black)
-            .cornerRadius(10)
+//            Button("Process"){
+//                currentView="Process"
+//            }
+//            .font(.headline)
+//            .padding()
+//            .foregroundColor(.black)
+//            .cornerRadius(10)
+//
+//            Button("Process"){
+//                currentView="Process"
+//            }
+//            .font(.headline)
+//            .padding()
+//            .foregroundColor(.black)
+//            .cornerRadius(10)
         }
         .padding()
     }
@@ -151,6 +151,7 @@ struct QuizView: View {
     @State private var selectedAnswer:String?=nil
     @State private var isAnswerCorrect:Bool?=nil
     @State private var isAnswered=false
+    @State private var confettiCounter:Int=0
     
     let questions=[
         "What is process?":["A program in execution","A stored file","A network request","A hardware device"],
@@ -177,58 +178,103 @@ struct QuizView: View {
                         answer in
                         Button(action:{
                             guard !isAnswered else { return }
-                            selectedAnswer = answer
-                            isAnswered = true
-                            if(question=="What is process?" && answer=="A stored file") || (question=="What is virtual memory?" && answer=="A memory management technique"){
-                                isAnswerCorrect=true
-                                score+=1
-                            }else{
-                                isAnswerCorrect=false
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now()+2.0){
-                                questionIndex+=1
-                                selectedAnswer=nil
-                                isAnswerCorrect=nil
-                                isAnswered=false
-                            }
-                        })
-                        {
+                            selectOption(answer,for:question)
+                        }){
                             Text(answer)
                                 .padding()
                                 .frame(maxWidth: .infinity)
                                 .foregroundColor(.black)
-                                .font(.title3)
-                                .fontWeight(.bold)
                         }
-                        
                         .background(backgroundColor(for: answer))
                         .cornerRadius(10)
-                        
-                        .padding(.horizontal,2)
+                        .padding(.horizontal,10)
                         .disabled(isAnswered)
                     }
-                } else{
-                    Text("Quiz Completed!")
-                        .font(.title)
-                        .padding()
-                    
-                    Text("Your score is: \(score)/\(questions.count)")
-                        .font(.headline)
-                        .padding()
-                    
-                    Button("Back to Home Page"){
-                        currentView="home"
-                    }
-                    .font(.headline)
-                    .padding()
-                    .foregroundColor(.black)
-                    .cornerRadius(10)
                 }
+                
+                else{
+                                        Text("Quiz Completed!")
+                                            .font(.title)
+                                            .padding()
+                    
+                                        Text("Your score is: \(score)/\(questions.count)")
+                                            .font(.headline)
+                                            .padding()
+                    
+                                        Button("Back to Home Page"){
+                                            currentView="home"
+                                        }
+                                        .font(.headline)
+                                        .padding()
+                                        .foregroundColor(.black)
+                                        .cornerRadius(10)
+                }
+                    
+                    
+//                    ForEach(answers, id:\.self){
+//                        answer in
+//                        Button(action:{
+//                            guard !isAnswered else { return }
+//                            selectOption(answer,for:question)
+//                            )}{
+//                                Text(answer)
+//                                    .padding()
+//                                    .frame(maxWidth: .infinity)
+//                                    .foregroundColor(.black)
+//                                    .font(.title3)
+//                                    .fontWeight(.bold)
+//                            }
+//                            .background(backgroundColor(for: answer))
+//                            .cornerRadius(10)
+//                            .padding(.horizontal,10)
+//                            .disabled(isAnswered)
+//                    }
+//                } else{
+//                    Text("Quiz Completed!")
+//                        .font(.title)
+//                        .padding()
+//                    
+//                    Text("Your score is: \(score)/\(questions.count)")
+//                        .font(.headline)
+//                        .padding()
+//                    
+//                    Button("Back to Home Page"){
+//                        currentView="home"
+//                    }
+//                    .font(.headline)
+//                    .padding()
+//                    .foregroundColor(.black)
+//                    .cornerRadius(10)
+//                }
             }
+            .padding()
         }
-        .padding()
+//        .padding()
+                               
+//        ConfettiCannon(counter: $confettiCounter,num:50,colors:[.red,.blue,.green],radius:300.0)
     }
     
+    func selectOption(_ option:String, for question:String){
+                            if selectedAnswer == nil{
+                                selectedAnswer=option
+                                isAnswered=true
+                                
+                                if (question=="What is process?" && option=="A program in execution") || (question=="What is virtual memory?" && option=="A memory management technique"){
+                                    isAnswerCorrect=true
+                                    score+=1
+                                    confettiCounter+=1
+                                } else{
+                                    isAnswerCorrect=false
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now()+2){
+                                    questionIndex+=1
+                                    selectedAnswer=nil
+                                    isAnswerCorrect=nil
+                                    isAnswered=false
+                                }
+                            }
+                        }
+                               
     func backgroundColor(for option: String) -> Color {
         if let selectedAnswer = selectedAnswer {
             if selectedAnswer == option {
@@ -244,3 +290,4 @@ struct QuizView: View {
 #Preview {
     ContentView()
 }
+
