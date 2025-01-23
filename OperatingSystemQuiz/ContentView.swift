@@ -197,18 +197,13 @@ struct QuizView: View {
     @State private var timeRemaining=15
     @State private var timer:Timer?=nil
     @Environment(\.colorScheme) var colorScheme
-//    let topic:Topic
-    
-    let questions=[
-        "What is process?":["A program in execution","A stored file","A network request","A hardware device"],
-        "What is virtual memory?":["A memory management technique","A physical memory module","A storage disk","A network protocol"]
-    ]
+    let topic:Topic
     
     var body: some View{
         ScrollView{
             VStack{
                 
-                Text("Quiz App")
+                Text("Quiz: \(topic.name)")
                     .font(.largeTitle)
                     .padding()
                 
@@ -222,13 +217,13 @@ struct QuizView: View {
                     
                     Spacer()
                     
-                    Text("\(score)/\(questions.count)")
+                    Text("\(score)/\(topic.questions.count)")
                         .font(.headline)
                         .padding(.horizontal)
                     
                 }
-                        let question=Array(questions.keys)[questionIndex]
-                        let answers=questions[question]!
+                let question=Array(topic.questions.keys)[questionIndex]
+                let answers=topic.questions[question]!
                         
                         Text(question)
                             .font(.title3)
