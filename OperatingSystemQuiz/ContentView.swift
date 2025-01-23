@@ -11,6 +11,7 @@ import ConfettiSwiftUI
 struct ContentView: View {
     @State private var currentView:String? = "login"
     @State private var finalScore:Int = 0
+    @State private var selectedTopic:Topic?=nil
     
     var body: some View {
         VStack {
@@ -18,14 +19,17 @@ struct ContentView: View {
                 LoginView(currentView: $currentView)
             }
             else if currentView=="home"{
-                HomeView(currentView: $currentView)
+                HomeView(currentView: $currentView, selectedTopic: $selectedTopic)
             }
-            else if currentView=="Process"{
-                TopicDetailView(topic:"Process",description: "Process is the basic unit of execution in a computer system.",
-                                currentView: $currentView)
+            else if currentView == "topicDetail"{
+                if let topic = selectedTopic{
+                    TopicDetailView(topic: topic, currentView: $currentView)
+                }
             }
             else if currentView=="quiz"{
-                QuizView(currentView: $currentView, finalScore: $finalScore)
+                if let topic = selectedTopic{
+                    QuizView(currentView: $currentView, finalScore: $finalScore, topic: topic)
+                }
             }
             else if currentView=="endPage"{
                 EndPageView(currentView: $currentView, score: finalScore)
@@ -292,7 +296,7 @@ struct QuizView: View {
     }
     
     func nextQuestion() {
-        if questionIndex+1>=questions.count {
+        if questionIndex+1>=topic.questions.count {
             stopTimer()
             finalScore=score
             currentView="endPage"
