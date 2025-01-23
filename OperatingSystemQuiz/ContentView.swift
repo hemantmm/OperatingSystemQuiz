@@ -159,6 +159,7 @@ struct QuizView: View {
     @State private var confettiCounter:Int=0
     @State private var timeRemaining=15
     @State private var timer:Timer?=nil
+    @Environment(\.colorScheme) var colorScheme
     
     let questions=[
         "What is process?":["A program in execution","A stored file","A network request","A hardware device"],
@@ -244,12 +245,17 @@ struct QuizView: View {
                         }
                                
     func backgroundColor(for option: String) -> Color {
-        if let selectedAnswer = selectedAnswer {
-            if selectedAnswer == option {
-                return isAnswerCorrect == true ? Color.green : Color.red
-            }
+        
+        guard let selectedAnswer = selectedAnswer else{
+            return colorScheme == .dark ? Color.mint : .white
         }
-        return Color.mint
+        if selectedAnswer == option {
+            return isAnswerCorrect == true ? Color.green : Color.red
+        }
+        else{
+            return colorScheme == .dark ? Color.mint : .white
+        }
+        
     }
     
     func nextQuestion() {
