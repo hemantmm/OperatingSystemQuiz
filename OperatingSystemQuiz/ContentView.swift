@@ -99,22 +99,6 @@ struct HomeView: View {
             .padding()
             .foregroundColor(.black)
             .cornerRadius(10)
-            
-//            Button("Process"){
-//                currentView="Process"
-//            }
-//            .font(.headline)
-//            .padding()
-//            .foregroundColor(.black)
-//            .cornerRadius(10)
-//
-//            Button("Process"){
-//                currentView="Process"
-//            }
-//            .font(.headline)
-//            .padding()
-//            .foregroundColor(.black)
-//            .cornerRadius(10)
         }
         .padding()
     }
@@ -146,6 +130,54 @@ struct TopicDetailView:View {
     }
 }
 
+struct Topic{
+    let name:String
+    let description:String
+    let questions:[String:[String]]
+    let correctAnswers:[String:String]
+    
+}
+    let topics:[Topic]=[
+        Topic(
+                name: "Process",
+                description: "Process is the basic unit of execution in a computer system.",
+                questions: [
+                    "What is a process?": ["A program in execution", "A stored file", "A network request", "A hardware device"],
+                    "What is process scheduling?": ["Allocating CPU to processes", "Managing storage", "Network requests", "Memory management"]
+                ],
+                correctAnswers: [
+                    "What is a process?": "A program in execution",
+                    "What is process scheduling?": "Allocating CPU to processes"
+                ]
+            ),
+        
+        Topic(
+            name:"Kernel",
+            description: "The kernel is the core part of an operating system.",
+            questions:[
+                "What is a kernel?":["Core of an OS","User interface","File system","Storage device"],
+                "What is the role of the kernel?": ["Manage hardware", "Process emails", "Run apps", "Handle network requests"]
+            ],
+            correctAnswers: [
+                "What is a kernel?":"Core of an OS",
+                "What is the role of the kernel?": "Manage hardware"
+            ]
+        ),
+        
+        Topic(
+            name: "Scheduling Algorithm",
+            description: "Scheduling alogrithms decide the order in which processes run.",
+            questions: [
+                "What is round-robin scheduling?":["Equal time for processes","Priority based","Shortest job first","First come first served"],
+                "What is goal scheduling?":["Maximize CPU usage","Save battery","Reduce storage","Improve graphics"]
+            ],
+            correctAnswers: [
+                "What is round-robin scheduling?":"Equal time for processes",
+                "What is goal scheduling?":"Maximize CPU usage"
+            ]
+        ),
+    ]
+
 struct QuizView: View {
     
     @Binding var currentView:String?
@@ -160,6 +192,7 @@ struct QuizView: View {
     @State private var timeRemaining=15
     @State private var timer:Timer?=nil
     @Environment(\.colorScheme) var colorScheme
+//    let topic:Topic
     
     let questions=[
         "What is process?":["A program in execution","A stored file","A network request","A hardware device"],
