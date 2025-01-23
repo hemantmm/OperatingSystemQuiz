@@ -77,7 +77,7 @@ struct LoginView: View {
                     .font(.headline)
                     .padding()
                     .foregroundColor(.black)
-                    
+                
             }
             .background(Color.mint)
             .cornerRadius(10)
@@ -146,46 +146,48 @@ struct Topic{
     let correctAnswers:[String:String]
     
 }
-    let topics:[Topic]=[
-        Topic(
-                name: "Process",
-                description: "Process is the basic unit of execution in a computer system.",
-                questions: [
-                    "What is a process?": ["A program in execution", "A stored file", "A network request", "A hardware device"],
-                    "What is process scheduling?": ["Allocating CPU to processes", "Managing storage", "Network requests", "Memory management"]
-                ],
-                correctAnswers: [
-                    "What is a process?": "A program in execution",
-                    "What is process scheduling?": "Allocating CPU to processes"
-                ]
-            ),
-        
-        Topic(
-            name:"Kernel",
-            description: "The kernel is the core part of an operating system.",
-            questions:[
-                "What is a kernel?":["Core of an OS","User interface","File system","Storage device"],
-                "What is the role of the kernel?": ["Manage hardware", "Process emails", "Run apps", "Handle network requests"]
-            ],
-            correctAnswers: [
-                "What is a kernel?":"Core of an OS",
-                "What is the role of the kernel?": "Manage hardware"
-            ]
-        ),
-        
-        Topic(
-            name: "Scheduling Algorithm",
-            description: "Scheduling alogrithms decide the order in which processes run.",
-            questions: [
-                "What is round-robin scheduling?":["Equal time for processes","Priority based","Shortest job first","First come first served"],
-                "What is goal scheduling?":["Maximize CPU usage","Save battery","Reduce storage","Improve graphics"]
-            ],
-            correctAnswers: [
-                "What is round-robin scheduling?":"Equal time for processes",
-                "What is goal scheduling?":"Maximize CPU usage"
-            ]
-        ),
-    ]
+
+
+let topics: [Topic] = [
+    Topic(
+        name: "Process",
+        description: "Process is the basic unit of execution in a computer system.",
+        questions: [
+            "What is a process?": ["A program in execution", "A stored file", "A network request", "A hardware device"],
+            "What is process scheduling?": ["Allocating CPU to processes", "Managing storage", "Network requests", "Memory management"]
+        ],
+        correctAnswers: [
+            "What is a process?": "A program in execution",
+            "What is process scheduling?": "Allocating CPU to processes"
+        ]
+    ),
+    Topic(
+        name: "Kernel",
+        description: "The kernel is the core part of an operating system.",
+        questions: [
+            "What is a kernel?": ["Core of an OS", "User interface", "File system", "Storage device"],
+            "What is the role of the kernel?": ["Manage hardware", "Process emails", "Run apps", "Handle network requests"]
+        ],
+        correctAnswers: [
+            "What is a kernel?": "Core of an OS",
+            "What is the role of the kernel?": "Manage hardware"
+        ]
+    ),
+    Topic(
+        name: "Scheduling Algorithms",
+        description: "Scheduling algorithms decide the order in which processes run.",
+        questions: [
+            "What is round-robin scheduling?": ["Equal time for processes", "Priority-based", "Shortest job first", "First come first served"],
+            "What is the goal of scheduling?": ["Maximize CPU usage", "Save battery", "Reduce storage", "Improve graphics"]
+        ],
+        correctAnswers: [
+            "What is round-robin scheduling?": "Equal time for processes",
+            "What is the goal of scheduling?": "Maximize CPU usage"
+        ]
+    )
+]
+
+
 
 struct QuizView: View {
     
@@ -228,30 +230,30 @@ struct QuizView: View {
                 }
                 let question=Array(topic.questions.keys)[questionIndex]
                 let answers=topic.questions[question]!
-                        
-                        Text(question)
-                            .font(.title3)
+                
+                Text(question)
+                    .font(.title3)
+                    .padding()
+                    .multilineTextAlignment(.center)
+                
+                ForEach(answers, id:\.self){
+                    answer in
+                    Button(action:{
+                        guard !isAnswered else { return }
+                        selectOption(answer,for:question)
+                    }){
+                        Text(answer)
                             .padding()
-                            .multilineTextAlignment(.center)
-                        
-                            ForEach(answers, id:\.self){
-                                answer in
-                                Button(action:{
-                                    guard !isAnswered else { return }
-                                        selectOption(answer,for:question)
-                                                }){
-                                                    Text(answer)
-                                                        .padding()
-                                                        .frame(maxWidth: .infinity)
-                                                        .foregroundColor(.black)
-                                                }
-                                                .background(backgroundColor(for: answer))
-                                                .cornerRadius(10)
-                                                .padding(.horizontal,10)
-                                                .disabled(isAnswered)
-                                            }
-
+                            .frame(maxWidth: .infinity)
+                            .foregroundColor(.black)
                     }
+                    .background(backgroundColor(for: answer))
+                    .cornerRadius(10)
+                    .padding(.horizontal,10)
+                    .disabled(isAnswered)
+                }
+                
+            }
             .padding()
             .onAppear{
                 startTimer()
@@ -264,23 +266,24 @@ struct QuizView: View {
     }
     
     func selectOption(_ option:String, for question:String){
-                            if selectedAnswer == nil{
-                                selectedAnswer=option
-                                isAnswered=true
-                                
-                                if (question=="What is process?" && option=="A program in execution") || (question=="What is virtual memory?" && option=="A memory management technique"){
-                                    isAnswerCorrect=true
-                                    score+=1
-                                    confettiCounter+=1
-                                } else{
-                                    isAnswerCorrect=false
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now()+2){
-                                    self.nextQuestion()
-                                }
-                            }
-                        }
-                               
+        if selectedAnswer == nil{
+            selectedAnswer=option
+            isAnswered=true
+            
+            if topic.correctAnswers[question] == option{
+                isAnswerCorrect=true
+                score+=1
+                confettiCounter+=1
+            }
+            else{
+                isAnswerCorrect=false
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now()+2){
+                self.nextQuestion()
+            }
+        }
+    }
+    
     func backgroundColor(for option: String) -> Color {
         
         guard let selectedAnswer = selectedAnswer else{
@@ -305,7 +308,7 @@ struct QuizView: View {
             selectedAnswer = nil
             isAnswerCorrect = nil
             isAnswered=false
-//            resetTimer()
+            //            resetTimer()
         }
     }
     
@@ -335,21 +338,21 @@ struct QuizView: View {
 struct EndPageView: View {
     @Binding var currentView: String?
     let score: Int
-
+    
     var body: some View {
         VStack {
             Text("🎉 Congratulations! 🎉")
                 .font(.largeTitle)
                 .padding()
-
+            
             Text("You completed the quiz!")
                 .font(.title)
                 .padding(.bottom)
-
+            
             Text("Your score: \(score)")
                 .font(.title2)
                 .padding()
-
+            
             HStack(spacing: 20) {
                 Button("Retake Quiz") {
                     currentView = "quiz"
@@ -359,7 +362,7 @@ struct EndPageView: View {
                 .background(Color.mint)
                 .foregroundColor(.black)
                 .cornerRadius(10)
-
+                
                 Button("Home") {
                     currentView = "home"
                 }
