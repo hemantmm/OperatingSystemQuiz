@@ -46,6 +46,8 @@ struct LoginView: View {
     @State private var email:String=""
     @State private var errorMessage:String=""
     
+    @State private var showAlert:Bool=false
+    
     var body: some View {
         VStack{
             Text("Login")
@@ -53,25 +55,29 @@ struct LoginView: View {
                 .padding()
             
             TextField("User Name", text: $userName)
+                .onSubmit {
+                    if !userName.isEmpty &&
+                        !email.isEmpty &&
+                        isValidEmail(email){
+                        showAlert=true
+                    }
+                }
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
             
             TextField("Email", text: $email)
+                .onSubmit {
+                    if !userName.isEmpty &&
+                        !email.isEmpty &&
+                        isValidEmail(email){
+                        showAlert=true
+                    }
+                }
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
             
-            if !errorMessage.isEmpty{
-                Text(errorMessage)
-                    .foregroundColor(.red)
-            }
-            
             Button(action:{
-                if userName.isEmpty || email.isEmpty{
-                    errorMessage="Please fill all the fields"
-                }else{
-                    errorMessage=""
-                    currentView="home"
-                }
+                showAlert=true
             }){
                 Text("Proceed")
                     .font(.headline)
@@ -79,11 +85,27 @@ struct LoginView: View {
                     .foregroundColor(.black)
                 
             }
-            .background(Color.mint)
+            .alert(isPresented: $showAlert){
+                Alert(
+                    title:Text("Start Proceeding"),
+                    message: Text("Good luck, \(userName)!"),
+                    dismissButton: .default(Text("OK"),action:{
+                        currentView="home"
+                    })
+                )
+            }
+            .background(userName.isEmpty || email.isEmpty || !isValidEmail(email) ? Color.gray : Color.mint)
+            .disabled(userName.isEmpty || email.isEmpty || !isValidEmail(email))
             .cornerRadius(10)
             .padding(.horizontal,40)
         }
         .padding()
+    }
+    
+    func isValidEmail(_ email: String) -> Bool {
+        let emailRegEx="[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let emailTest=NSPredicate(format: "SELF MATCHES %@", emailRegEx)
+        return emailTest.evaluate(with: email)
     }
 }
 
@@ -130,10 +152,13 @@ struct TopicDetailView:View {
             Button("Take Quiz"){
                 currentView="quiz"
             }
+            
             .font(.headline)
             .padding()
             .foregroundColor(.black)
+            .background(.mint)
             .cornerRadius(10)
+            .buttonStyle(PlainButtonStyle())
         }
         .padding()
     }
@@ -186,8 +211,6 @@ let topics: [Topic] = [
         ]
     )
 ]
-
-
 
 struct QuizView: View {
     
@@ -362,6 +385,7 @@ struct EndPageView: View {
                 .background(Color.mint)
                 .foregroundColor(.black)
                 .cornerRadius(10)
+                .buttonStyle(PlainButtonStyle())
                 
                 Button("Home") {
                     currentView = "home"
@@ -371,6 +395,7 @@ struct EndPageView: View {
                 .background(Color.mint)
                 .foregroundColor(.black)
                 .cornerRadius(10)
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.top)
         }
