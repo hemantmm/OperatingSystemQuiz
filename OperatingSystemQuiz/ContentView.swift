@@ -85,6 +85,7 @@ struct LoginView: View {
 
 struct HomeView: View {
     @Binding var currentView:String?
+    @Binding var selectedTopic:Topic?
     
     var body: some View {
         VStack {
@@ -92,13 +93,19 @@ struct HomeView: View {
                 .padding()
                 .font(.largeTitle)
             
-            Button("Process"){
-                currentView="Process"
+            ForEach(topics, id:\.name){
+                topic in
+                Button(topic.name)
+                {
+                    selectedTopic=topic
+                    currentView="topicDetail"
+                }
+                .font(.headline)
+                .padding()
+                .foregroundColor(.black)
+                .cornerRadius(10)
+                .padding(.horizontal,20)
             }
-            .font(.headline)
-            .padding()
-            .foregroundColor(.black)
-            .cornerRadius(10)
         }
         .padding()
     }
