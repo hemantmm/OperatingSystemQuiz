@@ -112,17 +112,15 @@ struct HomeView: View {
 }
 
 struct TopicDetailView:View {
-    let topic:String
-    let description:String
-    
+    let topic:Topic
     @Binding var currentView:String?
     
     var body: some View {
         VStack {
-            Text(topic)
+            Text(topic.name)
                 .padding()
                 .font(.headline)
-            Text(description)
+            Text(topic.description)
                 .padding()
             
             Button("Take Quiz"){
