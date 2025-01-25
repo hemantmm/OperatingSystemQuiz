@@ -8,6 +8,7 @@
 import SwiftUI
 import ConfettiSwiftUI
 
+
 struct ContentView: View {
     @State private var currentView:String? = "login"
     @State private var finalScore:Int = 0
@@ -400,6 +401,31 @@ struct EndPageView: View {
             .padding(.top)
         }
         .padding()
+    }
+}
+
+struct LeaderboardEntry:Codable,Identifiable{
+    var id=UUID()
+    var name:String
+    var score:Int
+}
+
+class LeaderboardManager{
+    static let leaderboardKey="leaderboard"
+    
+    static func loadLeaderboard()->[LeaderboardEntry]{
+        guard let data=UserDefaults.standard.data(forKey: leaderboardKey),
+              let leaderboard=try?JSONDecoder().decode([LeaderboardEntry].self, from: data) else{
+            return []
+        }
+        return leaderboard
+    }
+    
+    static func saveLeaderboard(_ leaderboard:[LeaderboardEntry]){
+        guard let data=try?JSONEncoder().encode(leaderboard) else{
+            return
+        }
+        UserDefaults.standard.set(data, forKey: leaderboardKey)
     }
 }
 
