@@ -362,6 +362,9 @@ struct QuizView: View {
 struct EndPageView: View {
     @Binding var currentView: String?
     let score: Int
+    let userName:String
+    
+    @Binding var leaderboard:[(name:String,score:Int)]
     
     var body: some View {
         VStack {
@@ -388,7 +391,7 @@ struct EndPageView: View {
                 .cornerRadius(10)
                 .buttonStyle(PlainButtonStyle())
                 
-                Button("Home") {
+                Button("Home Page") {
                     currentView = "home"
                 }
                 .font(.headline)
@@ -397,40 +400,35 @@ struct EndPageView: View {
                 .foregroundColor(.black)
                 .cornerRadius(10)
                 .buttonStyle(PlainButtonStyle())
+                
+                Button("View Leaderboard"){
+                    saveScoreToLeaderboard()
+                    currentView="leaderboard"
+                }
+                .font(.headline)
+                .padding()
+                .background(.mint)
+                .foregroundColor(.black)
+                .cornerRadius(10)
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.top)
         }
         .padding()
     }
-}
-
-struct LeaderboardEntry:Codable,Identifiable{
-    var id=UUID()
-    var name:String
-    var score:Int
-}
-
-class LeaderboardManager{
-    static let leaderboardKey="leaderboard"
     
-    static func loadLeaderboard()->[LeaderboardEntry]{
-        guard let data=UserDefaults.standard.data(forKey: leaderboardKey),
-              let leaderboard=try?JSONDecoder().decode([LeaderboardEntry].self, from: data) else{
-            return []
+    private func saveScoreToLeaderboard() {
+        if let existingIndex=leaderboard.firstIndex(where:{$0.name == userName}){
+            if leaderboard[existingIndex].score<score{
+                leaderboard[existingIndex].score=score
+            }
         }
-        return leaderboard
-    }
-    
-    static func saveLeaderboard(_ leaderboard:[LeaderboardEntry]){
-        guard let data=try?JSONEncoder().encode(leaderboard) else{
-            return
+        else{
+            leaderboard.append((name:userName,score:score))
         }
-        UserDefaults.standard.set(data, forKey: leaderboardKey)
+        leaderboard.sort{$0.score > $1.score}
     }
 }
-
-
-
 
 #Preview {
     ContentView()
