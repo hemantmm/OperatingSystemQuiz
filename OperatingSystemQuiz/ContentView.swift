@@ -13,6 +13,8 @@ struct ContentView: View {
     @State private var currentView:String? = "login"
     @State private var finalScore:Int = 0
     @State private var selectedTopic:Topic?=nil
+    @State private var userName:String=""
+    @State private var leaderboard:[(name:String,score:Int)]=[]
     
     var body: some View {
         VStack {
@@ -20,7 +22,7 @@ struct ContentView: View {
                 LoginView(currentView: $currentView)
             }
             else if currentView=="home"{
-                HomeView(currentView: $currentView, selectedTopic: $selectedTopic)
+                HomeView(currentView: $currentView, selectedTopic: $selectedTopic, leaderboard: $leaderboard)
             }
             else if currentView == "topicDetail"{
                 if let topic = selectedTopic{
@@ -33,7 +35,10 @@ struct ContentView: View {
                 }
             }
             else if currentView=="endPage"{
-                EndPageView(currentView: $currentView, score: finalScore)
+                EndPageView(currentView: $currentView, score: finalScore, userName: userName, leaderboard: $leaderboard)
+            }
+            else if currentView=="leaderboard"{
+                LeaderboardView(currentView: $currentView, leaderboard: leaderboard)
             }
         }
         .padding()
@@ -113,6 +118,7 @@ struct LoginView: View {
 struct HomeView: View {
     @Binding var currentView:String?
     @Binding var selectedTopic:Topic?
+    @Binding var leaderboard:[(name:String,score:Int)]
     
     var body: some View {
         VStack {
@@ -133,6 +139,16 @@ struct HomeView: View {
                 .cornerRadius(10)
                 .padding(.horizontal,20)
             }
+            Button("View Leaderboard")
+            {
+                currentView="leaderboard"
+            }
+            .font(.headline)
+            .padding()
+            .foregroundColor(.black)
+            .background(.mint)
+            .cornerRadius(10)
+            .buttonStyle(PlainButtonStyle())
         }
         .padding()
     }
