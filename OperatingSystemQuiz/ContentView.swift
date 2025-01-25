@@ -430,6 +430,45 @@ struct EndPageView: View {
     }
 }
 
+struct LeaderboardView: View {
+    
+    @Binding var currentView: String?
+    let leaderboard:[(name:String,score:Int)]
+    
+    var body: some View {
+        VStack{
+            Text("Leaderboard")
+                .font(.largeTitle)
+                .padding()
+            
+            List{
+                ForEach(leaderboard, id:\.name){
+                    entry in
+                    HStack{
+                        Text(entry.name)
+                            .font(.headline)
+                        Spacer()
+                        Text("\(entry.score)")
+                            .font(.subheadline)
+                    }
+                    .padding()
+                }
+            }
+            Button("Homepage")
+            {
+                currentView="home"
+            }
+            .font(.headline)
+            .padding()
+            .background(.mint)
+            .foregroundColor(.black)
+            .cornerRadius(10)
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding()
+    }
+}
+
 #Preview {
     ContentView()
 }
