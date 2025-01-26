@@ -19,7 +19,7 @@ struct ContentView: View {
     var body: some View {
         VStack {
             if currentView=="login"{
-                LoginView(currentView: $currentView)
+                LoginView(currentView: $currentView, userName: $userName)
             }
             else if currentView=="home"{
                 HomeView(currentView: $currentView, selectedTopic: $selectedTopic, leaderboard: $leaderboard)
@@ -48,7 +48,7 @@ struct ContentView: View {
 struct LoginView: View {
     
     @Binding var currentView:String?
-    @State private var userName:String=""
+    @Binding var userName:String
     @State private var email:String=""
     @State private var errorMessage:String=""
     
@@ -379,6 +379,7 @@ struct EndPageView: View {
     @Binding var currentView: String?
     let score: Int
     let userName:String
+    @State private var isUserNameEntered:Bool=false
     
     @Binding var leaderboard:[(name:String,score:Int)]
     
@@ -396,6 +397,10 @@ struct EndPageView: View {
                 .font(.title2)
                 .padding()
             
+            Text("Thanks, \(userName)")
+                .font(.title2)
+                .padding()
+
             HStack(spacing: 20) {
                 Button("Retake Quiz") {
                     currentView = "quiz"
@@ -447,20 +452,18 @@ struct EndPageView: View {
 }
 
 struct LeaderboardView: View {
-    
     @Binding var currentView: String?
-    let leaderboard:[(name:String,score:Int)]
+    let leaderboard: [(name: String, score: Int)]
     
     var body: some View {
-        VStack{
+        VStack {
             Text("Leaderboard")
                 .font(.largeTitle)
                 .padding()
             
-            List{
-                ForEach(leaderboard, id:\.name){
-                    entry in
-                    HStack{
+            List {
+                ForEach(leaderboard, id: \.name) { entry in
+                    HStack {
                         Text(entry.name)
                             .font(.headline)
                         Spacer()
@@ -470,9 +473,8 @@ struct LeaderboardView: View {
                     .padding()
                 }
             }
-            Button("Homepage")
-            {
-                currentView="home"
+            Button("Homepage") {
+                currentView = "home"
             }
             .font(.headline)
             .padding()
@@ -485,7 +487,13 @@ struct LeaderboardView: View {
     }
 }
 
+
+struct LeaderboardEntry:Identifiable{
+    let id=UUID()
+    let name:String
+     
+}
+
 #Preview {
     ContentView()
 }
-
