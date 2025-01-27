@@ -51,8 +51,11 @@ struct LoginView: View {
     @Binding var userName:String
     @State private var email:String=""
     @State private var errorMessage:String=""
+    @State private var userAgreed:Bool=false
     
     @State private var showAlert:Bool=false
+    
+    let agreementText:String="I have understood all the conditions written on the agreement and with adhere to them"
     
     var body: some View {
         VStack{
@@ -60,6 +63,25 @@ struct LoginView: View {
                 .font(.largeTitle)
                 .padding()
             
+            GroupBox(label:Label("End user agreement", systemImage: "building.columns")){
+                ScrollView(.vertical,showsIndicators: true){
+                    Text(agreementText)
+//                        .font(.footnote)
+                }
+                .frame(height: 100)
+                
+                Toggle(isOn: $userAgreed){
+                    Text("I agree to the above ters and conditions.")
+                }
+//                Toggle(
+//                    "I agree to the above terms and conditions.",
+//                    systemImage: "dot.radiowaves.left.and.right",
+//                    isOn: $userAgreed
+//                )
+            }
+//            .background(.mint)
+//            .foregroundColor(.black)
+            .toggleStyle(.switch)
             TextField("User Name", text: $userName)
                 .onSubmit {
                     if !userName.isEmpty &&
@@ -116,43 +138,76 @@ struct LoginView: View {
 }
 
 struct HomeView: View {
-    @Binding var currentView:String?
-    @Binding var selectedTopic:Topic?
-    @Binding var leaderboard:[(name:String,score:Int)]
-    
+    @Binding var currentView: String?
+    @Binding var selectedTopic: Topic?
+    @Binding var leaderboard: [(name: String, score: Int)]
+
     var body: some View {
-        VStack {
-            Text("Operating Systems")
-                .padding()
-                .font(.largeTitle)
-            
-            ForEach(topics, id:\.name){
-                topic in
-                Button(topic.name)
-                {
-                    selectedTopic=topic
-                    currentView="topicDetail"
+        ScrollView {
+            VStack(spacing: 20) {
+                Text("Operating Systems")
+                    .font(.largeTitle)
+                    .padding()
+
+                ForEach(topics, id: \.name) { topic in
+                    TopicCardView(topic: topic) {
+                        selectedTopic = topic
+                        currentView = "topicDetail"
+                    }
+                }
+
+                Button("View Leaderboard") {
+                    currentView = "leaderboard"
                 }
                 .font(.headline)
                 .padding()
-                .foregroundColor(.black)
+                .foregroundColor(.white)
+                .background(Color.mint)
                 .cornerRadius(10)
-                .padding(.horizontal,20)
+                .buttonStyle(PlainButtonStyle())
             }
-            Button("View Leaderboard")
-            {
-                currentView="leaderboard"
-            }
-            .font(.headline)
             .padding()
-            .foregroundColor(.black)
-            .background(.mint)
-            .cornerRadius(10)
+        }
+    }
+}
+
+struct TopicCardView: View {
+    let topic: Topic
+    let action: () -> Void
+    @Environment(\.colorScheme) var colorScheme // Detect dark or light mode
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(topic.name)
+                .font(.headline)
+                .foregroundColor(colorScheme == .dark ? Color.black : Color.black)
+            Text(topic.description)
+                .font(.subheadline)
+                .foregroundColor(colorScheme == .dark ? Color.gray : Color.orange)
+            Button(action: action) {
+                Text("Learn More")
+                    .font(.subheadline)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .foregroundColor(colorScheme == .dark ? Color.black : Color.white)
+                    .background(colorScheme == .dark ? Color.mint : Color.blue)
+                    .cornerRadius(10)
+            }
             .buttonStyle(PlainButtonStyle())
         }
         .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(colorScheme == .dark ? Color.mint : Color.white)
+                .shadow(
+                    color: colorScheme == .dark ? Color.black.opacity(0.3) : Color.black.opacity(0.1),
+                    radius: 8, x: 0, y: 5
+                )
+        )
+        .padding(.horizontal)
     }
 }
+
 
 struct TopicDetailView:View {
     let topic:Topic
@@ -402,7 +457,7 @@ struct EndPageView: View {
                 .padding()
 
             HStack(spacing: 20) {
-                Button("Retake Quiz") {
+                Button("Retake Quiz", systemImage: "restart.circle") {
                     currentView = "quiz"
                 }
                 .font(.headline)
@@ -412,7 +467,7 @@ struct EndPageView: View {
                 .cornerRadius(10)
                 .buttonStyle(PlainButtonStyle())
                 
-                Button("Home Page") {
+                Button("Home Page", systemImage: "house.fill") {
                     currentView = "home"
                 }
                 .font(.headline)
@@ -473,7 +528,7 @@ struct LeaderboardView: View {
                     .padding()
                 }
             }
-            Button("Homepage") {
+            Button("Homepage", systemImage: "homekit") {
                 currentView = "home"
             }
             .font(.headline)
