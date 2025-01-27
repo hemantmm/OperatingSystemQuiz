@@ -174,16 +174,24 @@ struct HomeView: View {
 struct TopicCardView: View {
     let topic: Topic
     let action: () -> Void
-    @Environment(\.colorScheme) var colorScheme // Detect dark or light mode
+    @Environment(\.colorScheme) var colorScheme
+    
+    @State private var isVisible: Bool = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(topic.name)
                 .font(.headline)
                 .foregroundColor(colorScheme == .dark ? Color.black : Color.black)
+                .opacity(isVisible ? 1 : 0)
+                .offset(y: isVisible ? 0 : -20)
+                .animation(.easeOut(duration: 0.5), value: isVisible)
             Text(topic.description)
                 .font(.subheadline)
                 .foregroundColor(colorScheme == .dark ? Color.gray : Color.orange)
+                .opacity(isVisible ? 1 : 0)
+                .offset(y:isVisible ? 0 : -20)
+                .animation(.easeIn(duration: 1), value: isVisible)
             Button(action: action) {
                 Text("Learn More")
                     .font(.subheadline)
@@ -193,6 +201,9 @@ struct TopicCardView: View {
                     .background(colorScheme == .dark ? Color.mint : Color.blue)
                     .cornerRadius(10)
             }
+            .opacity(isVisible ? 1 : 0)
+            .offset(y: isVisible ? 0 : -20)
+            .animation(.easeInOut(duration: 1.5), value: isVisible)
             .buttonStyle(PlainButtonStyle())
         }
         .padding()
@@ -205,6 +216,11 @@ struct TopicCardView: View {
                 )
         )
         .padding(.horizontal)
+        .onAppear{
+            withAnimation{
+                isVisible=true
+            }
+        }
     }
 }
 
