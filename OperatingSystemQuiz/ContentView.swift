@@ -24,6 +24,9 @@ struct ContentView: View {
             else if currentView=="home"{
                 HomeView(currentView: $currentView, selectedTopic: $selectedTopic, leaderboard: $leaderboard)
             }
+            else if currentView=="dailyQuestionMode"{
+                DailyQuestionModeView(currentView: $currentView, userName: $userName)
+            }
             else if currentView == "topicDetail"{
                 if let topic = selectedTopic{
                     TopicDetailView(topic: topic, currentView: $currentView)
@@ -62,26 +65,7 @@ struct LoginView: View {
             Text("Login")
                 .font(.largeTitle)
                 .padding()
-            
-            GroupBox(label:Label("End user agreement", systemImage: "building.columns")){
-                ScrollView(.vertical,showsIndicators: true){
-                    Text(agreementText)
-//                        .font(.footnote)
-                }
-                .frame(height: 100)
-                
-                Toggle(isOn: $userAgreed){
-                    Text("I agree to the above ters and conditions.")
-                }
-//                Toggle(
-//                    "I agree to the above terms and conditions.",
-//                    systemImage: "dot.radiowaves.left.and.right",
-//                    isOn: $userAgreed
-//                )
-            }
-//            .background(.mint)
-//            .foregroundColor(.black)
-            .toggleStyle(.switch)
+        
             TextField("User Name", text: $userName)
                 .onSubmit {
                     if !userName.isEmpty &&
@@ -137,10 +121,16 @@ struct LoginView: View {
     }
 }
 
+
 struct HomeView: View {
     @Binding var currentView: String?
     @Binding var selectedTopic: Topic?
     @Binding var leaderboard: [(name: String, score: Int)]
+    @State private var animateIndex: Int = -1
+    @State private var remainingTime: Int = 0 // Time remaining for 24-hour timer
+    @State private var timerStarted: Bool = false // To check if timer is started
+
+    @AppStorage("lastChallengeDate") private var lastChallengeDate: Date?
 
     var body: some View {
         ScrollView {
@@ -148,12 +138,40 @@ struct HomeView: View {
                 Text("Operating Systems")
                     .font(.largeTitle)
                     .padding()
-
-                ForEach(topics, id: \.name) { topic in
-                    TopicCardView(topic: topic) {
-                        selectedTopic = topic
+                
+                ForEach(topics.indices, id: \.self) { index in
+                    TopicCardView(topic: topics[index]) {
+                        selectedTopic = topics[index]
                         currentView = "topicDetail"
                     }
+                    .offset(x: animateIndex >= index ? 0 : (index.isMultiple(of: 2) ? -300 : 300))
+                    .opacity(animateIndex >= index ? 1 : 0)
+                    .animation(.easeOut(duration: 0.5).delay(Double(index) * 0.2), value: animateIndex)
+                }
+                .onAppear {
+                    animateIndex = topics.count
+                    updateRemainingTime() // Update remaining time when the view appears
+                    startTimer() // Start the timer when the view appears
+                }
+
+                // Disable the "Daily Question Mode" button if 24 hours have not passed
+                Button("Daily Question Mode") {
+                    currentView = "dailyQuestionMode"
+                }
+                .font(.headline)
+                .padding()
+                .foregroundColor(.black)
+                .background(remainingTime > 0 ? Color.gray : Color.red)
+                .cornerRadius(10)
+                .buttonStyle(PlainButtonStyle())
+                .disabled(remainingTime > 0) // Disable the button if the timer is running
+
+                // Display the countdown timer if it's active
+                if remainingTime > 0 {
+                    Text("Next challenge available in \(remainingTime) seconds")
+                        .font(.subheadline)
+                        .foregroundColor(.red)
+                        .padding()
                 }
 
                 Button("View Leaderboard") {
@@ -161,7 +179,7 @@ struct HomeView: View {
                 }
                 .font(.headline)
                 .padding()
-                .foregroundColor(.white)
+                .foregroundColor(.black)
                 .background(Color.mint)
                 .cornerRadius(10)
                 .buttonStyle(PlainButtonStyle())
@@ -169,7 +187,190 @@ struct HomeView: View {
             .padding()
         }
     }
+
+    func updateRemainingTime() {
+        // Only compute remaining time if the last challenge date exists
+        guard let lastDate = lastChallengeDate else {
+            remainingTime = 0 // No previous challenge, enable the button
+            return
+        }
+        
+        let timeInterval = Date().timeIntervalSince(lastDate)
+        remainingTime = max(0, 86400 - Int(timeInterval)) // 86400 seconds = 24 hours
+    }
+
+    func startTimer() {
+        // Only start the timer if it's not already started
+        if !timerStarted {
+            timerStarted = true
+            // Timer to decrement the remaining time every second
+            Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+                if remainingTime > 0 {
+                    remainingTime -= 1
+                } else {
+                    timer.invalidate()
+                }
+            }
+        }
+    }
 }
+
+
+
+struct DailyQuestionModeView: View {
+    @Binding var currentView: String?
+    @Binding var userName: String
+    @State private var questionIndex = 0
+    @State private var score = 0
+    @State private var isAnswered = false
+    @State private var selectedAnswer: String? = nil
+    @State private var isAnswerCorrect: Bool? = nil
+    @State private var confettiCounter: Int = 0
+    @State private var timeRemaining = 20 // Set initial timer to 20 seconds
+
+    
+    @AppStorage("lastChallengeDate") private var lastChallengeDate: Date?
+
+    let challengeQuestions: [String: [String]] = [
+        "What is the main function of the operating system kernel?": ["Manage hardware resources", "Run applications", "Provide internet access", "Store files"],
+        "What scheduling algorithm gives equal time to all processes?": ["Round-robin", "First Come First Serve", "Shortest Job First", "Priority Scheduling"],
+        "Which of the following is not an operating system?": ["Microsoft Word", "Windows 10", "Linux", "macOS"]
+    ]
+    
+    let correctAnswers: [String: String] = [
+        "What is the main function of the operating system kernel?": "Manage hardware resources",
+        "What scheduling algorithm gives equal time to all processes?": "Round-robin",
+        "Which of the following is not an operating system?": "Microsoft Word"
+    ]
+    
+    var body: some View {
+        ScrollView {
+            VStack {
+                Text("Daily Question Mode")
+                    .font(.largeTitle)
+                    .padding()
+                
+                Text("Time Remaining: \(timeRemaining) seconds")
+                    .font(.headline)
+                    .foregroundColor(.green)
+                    .padding()
+
+                let question = Array(challengeQuestions.keys)[questionIndex]
+                let answers = challengeQuestions[question]!
+
+                Text(question)
+                    .font(.title2)
+                    .padding()
+                    .multilineTextAlignment(.center)
+
+                ForEach(answers, id: \.self) { answer in
+                    Button(action: {
+                        guard !isAnswered else { return }
+                        selectOption(answer, for: question)
+                    }) {
+                        Text(answer)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .foregroundColor(.black)
+                            .background(backgroundColor(for: answer))
+                            .cornerRadius(10)
+                            .padding(.horizontal, 10)
+                            .disabled(isAnswered)
+                    }
+                }
+                
+                if let isAnswerCorrect = isAnswerCorrect {
+                    Text(isAnswerCorrect ? "Correct!" : "Incorrect")
+                        .font(.title)
+                        .foregroundColor(isAnswerCorrect ? .green : .red)
+                        .padding()
+                }
+            }
+            .padding()
+            .onAppear {
+                startTimer()
+            }
+            .onDisappear {
+                stopTimer()
+            }
+        }
+        
+        ConfettiCannon(trigger: $confettiCounter, num: 50, colors: [.red, .blue, .green], radius: 300.0)
+    }
+    
+    func selectOption(_ option: String, for question: String) {
+        if selectedAnswer == nil {
+            selectedAnswer = option
+            isAnswered = true
+            if correctAnswers[question] == option {
+                isAnswerCorrect = true
+                score += 1
+                confettiCounter += 1
+            } else {
+                isAnswerCorrect = false
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                nextQuestion()
+            }
+        }
+    }
+    
+    func nextQuestion() {
+        if questionIndex + 1 >= challengeQuestions.count {
+            stopTimer()
+            lastChallengeDate=Date()
+            currentView="home"
+        } else {
+            questionIndex += 1
+            selectedAnswer = nil
+            isAnswerCorrect = nil
+            isAnswered = false
+        }
+    }
+    
+    func startTimer() {
+        // Create a timer that will decrement every second
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+            if timeRemaining > 0 {
+                timeRemaining -= 1
+            } else {
+                timer.invalidate() // Stop the timer when it hits 0
+            }
+        }
+    }
+    
+    func stopTimer() {
+        // Logic to stop the timer, if needed
+    }
+    
+    func backgroundColor(for option: String) -> Color {
+        guard let selectedAnswer = selectedAnswer else {
+            return .white
+        }
+        if selectedAnswer == option {
+            return isAnswerCorrect == true ? Color.green : Color.red
+        } else {
+            return .white
+        }
+    }
+
+    // Function to check if 24 hours have passed since the last challenge
+    func isButtonEnabled() -> Bool {
+        guard let lastDate = lastChallengeDate else {
+            return true // Enable button if no previous date exists
+        }
+        
+        let currentDate = Date()
+        let timeInterval = currentDate.timeIntervalSince(lastDate)
+        
+        // If 24 hours have passed, the button will be enabled again
+        return timeInterval >= 86400 // 86400 seconds = 24 hours
+    }
+}
+
+
+
 
 struct TopicCardView: View {
     let topic: Topic
@@ -182,13 +383,15 @@ struct TopicCardView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(topic.name)
                 .font(.headline)
-                .foregroundColor(colorScheme == .dark ? Color.black : Color.black)
+                .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
                 .opacity(isVisible ? 1 : 0)
                 .offset(y: isVisible ? 0 : -20)
                 .animation(.easeOut(duration: 0.5), value: isVisible)
             Text(topic.description)
                 .font(.subheadline)
-                .foregroundColor(colorScheme == .dark ? Color.gray : Color.orange)
+                .fontWeight(.heavy)
+                .foregroundColor(colorScheme == .dark ? Color.green
+                                 : Color.orange)
                 .opacity(isVisible ? 1 : 0)
                 .offset(y:isVisible ? 0 : -20)
                 .animation(.easeIn(duration: 1), value: isVisible)
@@ -209,7 +412,7 @@ struct TopicCardView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 15)
-                .fill(colorScheme == .dark ? Color.mint : Color.white)
+                .fill(colorScheme == .dark ? Color.purple : Color.white)
                 .shadow(
                     color: colorScheme == .dark ? Color.black.opacity(0.3) : Color.black.opacity(0.1),
                     radius: 8, x: 0, y: 5
@@ -257,7 +460,7 @@ struct Topic{
     let description:String
     let questions:[String:[String]]
     let correctAnswers:[String:String]
-    
+//    var progress:Double
 }
 
 
@@ -302,57 +505,59 @@ let topics: [Topic] = [
 
 struct QuizView: View {
     
-    @Binding var currentView:String?
-    @Binding var finalScore:Int
+    @Binding var currentView: String?
+    @Binding var finalScore: Int
     
-    @State private var questionIndex=0
-    @State private var score=0
-    @State private var selectedAnswer:String?=nil
-    @State private var isAnswerCorrect:Bool?=nil
-    @State private var isAnswered=false
-    @State private var confettiCounter:Int=0
-    @State private var timeRemaining=15
-    @State private var timer:Timer?=nil
+    @State private var questionIndex = 0
+    @State private var score = 0
+    @State private var adjustedScore = 0.0
+    @State private var selectedAnswer: String? = nil
+    @State private var isAnswerCorrect: Bool? = nil
+    @State private var isAnswered = false
+    @State private var confettiCounter: Int = 0
+    @State private var timeRemaining = 15
+    @State private var timer: Timer? = nil
+    @State private var hintUsed: Bool = false
+    @State private var hintAvailable:Bool=false
+    @State private var hintText: String? = nil
     @Environment(\.colorScheme) var colorScheme
-    let topic:Topic
+    let topic: Topic
     
-    var body: some View{
-        ScrollView{
-            VStack{
-                
+    var body: some View {
+        ScrollView {
+            VStack {
                 Text("Quiz: \(topic.name)")
                     .font(.largeTitle)
                     .padding()
                 
                 Spacer()
                 
-                HStack{
+                HStack {
                     Text("Time Remaining: \(timeRemaining)")
                         .font(.headline)
-                        .foregroundColor(timeRemaining<5 ? .red : .mint)
+                        .foregroundColor(timeRemaining < 5 ? .red : .mint)
                         .padding()
                     
                     Spacer()
                     
-                    Text("\(score)/\(topic.questions.count)")
+                    Text("\(Int(adjustedScore))/\(topic.questions.count)") // Use adjustedScore for display
                         .font(.headline)
                         .padding(.horizontal)
-                    
                 }
-                let question=Array(topic.questions.keys)[questionIndex]
-                let answers=topic.questions[question]!
+                
+                let question = Array(topic.questions.keys)[questionIndex]
+                let answers = topic.questions[question]!
                 
                 Text(question)
                     .font(.title3)
                     .padding()
                     .multilineTextAlignment(.center)
                 
-                ForEach(answers, id:\.self){
-                    answer in
-                    Button(action:{
+                ForEach(answers, id: \.self) { answer in
+                    Button(action: {
                         guard !isAnswered else { return }
-                        selectOption(answer,for:question)
-                    }){
+                        selectOption(answer, for: question)
+                    }) {
                         Text(answer)
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -360,89 +565,126 @@ struct QuizView: View {
                     }
                     .background(backgroundColor(for: answer))
                     .cornerRadius(10)
-                    .padding(.horizontal,10)
+                    .padding(.horizontal, 10)
                     .disabled(isAnswered)
                 }
                 
+                if hintAvailable && !hintUsed {
+                    Button(action: {
+                        hintUsed = true
+                        hintText = "Here's a hint: \(getHint(for: question))"
+                        adjustedScore = max(adjustedScore - 1, 0) // Deduct 0.5 from adjustedScore
+                    }) {
+                        Text("Hint")
+                            .font(.headline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                           
+                            
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .foregroundColor(.yellow)
+                    .background(Color.black)
+                    .cornerRadius(10)
+                    .padding(.bottom, 10)
+                }
+                
+                if let hintText = hintText {
+                    Text(hintText)
+                        .font(.body)
+                        .foregroundColor(.orange)
+                        .padding(.bottom)
+                }
             }
             .padding()
-            .onAppear{
+            .onAppear {
                 startTimer()
+                startHintTimer()
             }
             .onDisappear {
                 stopTimer()
             }
         }
-        ConfettiCannon(trigger: $confettiCounter,num:50,colors:[.red,.blue,.green],radius:300.0)
+        ConfettiCannon(trigger: $confettiCounter, num: 50, colors: [.red, .blue, .green], radius: 300.0)
     }
     
-    func selectOption(_ option:String, for question:String){
-        if selectedAnswer == nil{
-            selectedAnswer=option
-            isAnswered=true
+    func getHint(for question: String) -> String {
+        guard let correctAnswer = topic.correctAnswers[question] else { return "No hint available" }
+        return "The correct answer starts with: \(correctAnswer.prefix(1))"
+    }
+    
+    func selectOption(_ option: String, for question: String) {
+        if selectedAnswer == nil {
+            selectedAnswer = option
+            isAnswered = true
             
-            if topic.correctAnswers[question] == option{
-                isAnswerCorrect=true
-                score+=1
-                confettiCounter+=1
+            if topic.correctAnswers[question] == option {
+                isAnswerCorrect = true
+                adjustedScore += 1
+                confettiCounter += 1
+            } else {
+                isAnswerCorrect = false
             }
-            else{
-                isAnswerCorrect=false
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now()+2){
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 self.nextQuestion()
             }
         }
     }
     
     func backgroundColor(for option: String) -> Color {
-        
-        guard let selectedAnswer = selectedAnswer else{
+        guard let selectedAnswer = selectedAnswer else {
             return colorScheme == .dark ? Color.mint : .white
         }
         if selectedAnswer == option {
             return isAnswerCorrect == true ? Color.green : Color.red
-        }
-        else{
+        } else {
             return colorScheme == .dark ? Color.mint : .white
         }
-        
     }
     
     func nextQuestion() {
-        if questionIndex+1>=topic.questions.count {
+        if questionIndex + 1 >= topic.questions.count {
             stopTimer()
-            finalScore=score
-            currentView="endPage"
-        }else{
-            questionIndex+=1
+            finalScore = Int(adjustedScore) // Set finalScore to the adjusted score
+            currentView = "endPage"
+        } else {
+            questionIndex += 1
             selectedAnswer = nil
             isAnswerCorrect = nil
-            isAnswered=false
-            //            resetTimer()
+            isAnswered = false
+            hintUsed = false
+            hintAvailable=false
+            hintText = nil
+            startHintTimer()
         }
     }
     
     func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true){ _ in
-            if timeRemaining>0 {
-                timeRemaining-=1
-            }
-            else{
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if timeRemaining > 0 {
+                timeRemaining -= 1
+            } else {
                 nextQuestion()
             }
         }
     }
     
-    func resetTimer() {
-        timeRemaining = 15
-    }
-    
     func stopTimer() {
         timer?.invalidate()
-        timer=nil
+        timer = nil
+    }
+    
+    func startHintTimer() {
+        DispatchQueue.main.asyncAfter(deadline: .now()+5){
+            if !isAnswered{
+                hintAvailable=true
+            }
+        }
     }
 }
+
+
 
 
 
@@ -568,3 +810,4 @@ struct LeaderboardEntry:Identifiable{
 #Preview {
     ContentView()
 }
+
