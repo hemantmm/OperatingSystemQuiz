@@ -127,8 +127,8 @@ struct HomeView: View {
     @Binding var selectedTopic: Topic?
     @Binding var leaderboard: [(name: String, score: Int)]
     @State private var animateIndex: Int = -1
-    @State private var remainingTime: Int = 0 // Time remaining for 24-hour timer
-    @State private var timerStarted: Bool = false // To check if timer is started
+    @State private var remainingTime: Int = 0 
+    @State private var timerStarted: Bool = false
 
     @AppStorage("lastChallengeDate") private var lastChallengeDate: Date?
 
@@ -150,11 +150,10 @@ struct HomeView: View {
                 }
                 .onAppear {
                     animateIndex = topics.count
-                    updateRemainingTime() // Update remaining time when the view appears
-                    startTimer() // Start the timer when the view appears
+                    updateRemainingTime()
+                    startTimer()
                 }
 
-                // Disable the "Daily Question Mode" button if 24 hours have not passed
                 Button("Daily Question Mode") {
                     currentView = "dailyQuestionMode"
                 }
@@ -164,9 +163,7 @@ struct HomeView: View {
                 .background(remainingTime > 0 ? Color.gray : Color.red)
                 .cornerRadius(10)
                 .buttonStyle(PlainButtonStyle())
-                .disabled(remainingTime > 0) // Disable the button if the timer is running
-
-                // Display the countdown timer if it's active
+                .disabled(remainingTime > 0)
                 if remainingTime > 0 {
                     Text("Next challenge available in \(remainingTime) seconds")
                         .font(.subheadline)
@@ -330,12 +327,11 @@ struct DailyQuestionModeView: View {
     }
     
     func startTimer() {
-        // Create a timer that will decrement every second
         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
             if timeRemaining > 0 {
                 timeRemaining -= 1
             } else {
-                timer.invalidate() // Stop the timer when it hits 0
+                timer.invalidate()
             }
         }
     }
@@ -355,17 +351,15 @@ struct DailyQuestionModeView: View {
         }
     }
 
-    // Function to check if 24 hours have passed since the last challenge
     func isButtonEnabled() -> Bool {
         guard let lastDate = lastChallengeDate else {
-            return true // Enable button if no previous date exists
+            return true
         }
         
         let currentDate = Date()
         let timeInterval = currentDate.timeIntervalSince(lastDate)
         
-        // If 24 hours have passed, the button will be enabled again
-        return timeInterval >= 86400 // 86400 seconds = 24 hours
+        return timeInterval >= 86400
     }
 }
 
@@ -460,7 +454,6 @@ struct Topic{
     let description:String
     let questions:[String:[String]]
     let correctAnswers:[String:String]
-//    var progress:Double
 }
 
 
@@ -800,12 +793,6 @@ struct LeaderboardView: View {
     }
 }
 
-
-struct LeaderboardEntry:Identifiable{
-    let id=UUID()
-    let name:String
-     
-}
 
 #Preview {
     ContentView()
