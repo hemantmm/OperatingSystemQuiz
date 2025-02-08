@@ -7,6 +7,23 @@
 
 import SwiftUI
 import ConfettiSwiftUI
+import AVKit
+
+
+extension View {
+    func placeholder<Content: View>(
+        when shouldShow: Bool,
+        alignment: Alignment = .leading,
+        @ViewBuilder placeholder: () -> Content
+    ) -> some View {
+        ZStack(alignment: alignment) {
+            if shouldShow {
+                placeholder()
+            }
+            self
+        }
+    }
+}
 
 
 struct ContentView: View {
@@ -14,7 +31,9 @@ struct ContentView: View {
     @State private var finalScore:Int = 0
     @State private var selectedTopic:Topic?=nil
     @State private var userName:String=""
-    @State private var leaderboard:[(name:String,score:Int)]=[]
+//    @State private var leaderboard:[(name:String,score:Int, topics:[String])]=[]
+    @State private var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]=[]
+    let totalQuizzes:Int=4
     
     var body: some View {
         VStack {
@@ -38,10 +57,10 @@ struct ContentView: View {
                 }
             }
             else if currentView=="endPage"{
-                EndPageView(currentView: $currentView, score: finalScore, userName: userName, leaderboard: $leaderboard)
+                EndPageView(currentView: $currentView, score: finalScore, userName: userName, selectedTopic: $selectedTopic, leaderboard: $leaderboard)
             }
             else if currentView=="leaderboard"{
-                LeaderboardView(currentView: $currentView, leaderboard: leaderboard)
+                LeaderboardView(currentView: $currentView, leaderboard: leaderboard, totalQuizzes: totalQuizzes)
             }
         }
         .padding()
@@ -61,58 +80,94 @@ struct LoginView: View {
     let agreementText:String="I have understood all the conditions written on the agreement and with adhere to them"
     
     var body: some View {
-        VStack{
-            Text("Login")
-                .font(.largeTitle)
-                .padding()
-        
-            TextField("User Name", text: $userName)
-                .onSubmit {
-                    if !userName.isEmpty &&
-                        !email.isEmpty &&
-                        isValidEmail(email){
-                        showAlert=true
-                    }
-                }
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-            
-            TextField("Email", text: $email)
-                .onSubmit {
-                    if !userName.isEmpty &&
-                        !email.isEmpty &&
-                        isValidEmail(email){
-                        showAlert=true
-                    }
-                }
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-            
-            Button(action:{
-                showAlert=true
-            }){
-                Text("Proceed")
-                    .font(.headline)
+        ZStack{
+//                Image("loginbackground")
+//                .resizable()
+//                .scaledToFill()
+//                .edgesIgnoringSafeArea(.all)
+            VStack{
+                Text("Login")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
                     .padding()
-                    .foregroundColor(.black)
+                    .foregroundColor(.purple)
+            
+                TextField("Enter name", text: $userName)
+                    .placeholder(when: userName.isEmpty){
+                        Text("")
+                            .foregroundColor(.white)
+                            .font(.title)
+                    }
+                    .onSubmit {
+                        if !userName.isEmpty &&
+                            !email.isEmpty &&
+                            isValidEmail(email){
+                            showAlert=true
+                        }
+                    }
+                    .padding(.leading,10)
+                    .background(.purple.opacity(0.8))
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.purple, lineWidth: 1)
+                    )
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .foregroundColor(.white)
+                    .font(.title)
+                    .padding()
                 
+                TextField("Enter email", text: $email, axis: .horizontal)
+                    .placeholder(when:email.isEmpty){
+                        Text("")
+                            .foregroundColor(.white)
+                            .font(.title)
+                    }
+                    .onSubmit {
+                        if !userName.isEmpty &&
+                            !email.isEmpty &&
+                            isValidEmail(email){
+                            showAlert=true
+                        }
+                    }
+                    .padding(.leading,10)
+                    .background(Color.purple.opacity(0.8))
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.purple, lineWidth: 1)
+                    )
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .foregroundColor(.white)
+                    .font(.title)
+//                    .shadow(color: .red ,radius: 5,x:0,y:0)
+                    .padding()
+                
+                Button(action:{
+                    showAlert=true
+                }){
+                    Text("Proceed")
+                        .font(.title2)
+                        .padding()
+                    
+                }
+                .alert(isPresented: $showAlert){
+                    Alert(
+                        title:Text("Start Proceeding"),
+                        message: Text("Good luck, \(userName)!"),
+                        dismissButton: .default(Text("OK"),action:{
+                            currentView="home"
+                        })
+                    )
+                }
+                .background(userName.isEmpty || email.isEmpty || !isValidEmail(email) ? Color.gray : Color.purple)
+                .disabled(userName.isEmpty || email.isEmpty || !isValidEmail(email))
+                .cornerRadius(10)
+                .padding(.horizontal,40)
             }
-            .alert(isPresented: $showAlert){
-                Alert(
-                    title:Text("Start Proceeding"),
-                    message: Text("Good luck, \(userName)!"),
-                    dismissButton: .default(Text("OK"),action:{
-                        currentView="home"
-                    })
-                )
-            }
-            .background(userName.isEmpty || email.isEmpty || !isValidEmail(email) ? Color.gray : Color.mint)
-            .disabled(userName.isEmpty || email.isEmpty || !isValidEmail(email))
-            .cornerRadius(10)
-            .padding(.horizontal,40)
+            .padding()
         }
-        .padding()
-    }
+        }
     
     func isValidEmail(_ email: String) -> Bool {
         let emailRegEx="[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
@@ -125,9 +180,9 @@ struct LoginView: View {
 struct HomeView: View {
     @Binding var currentView: String?
     @Binding var selectedTopic: Topic?
-    @Binding var leaderboard: [(name: String, score: Int)]
+    @Binding var leaderboard: [(name: String,topics:[(topic:String,score:Int)])]
     @State private var animateIndex: Int = -1
-    @State private var remainingTime: Int = 0 
+    @State private var remainingTime: Int = 0
     @State private var timerStarted: Bool = false
 
     @AppStorage("lastChallengeDate") private var lastChallengeDate: Date?
@@ -186,21 +241,18 @@ struct HomeView: View {
     }
 
     func updateRemainingTime() {
-        // Only compute remaining time if the last challenge date exists
         guard let lastDate = lastChallengeDate else {
-            remainingTime = 0 // No previous challenge, enable the button
+            remainingTime = 0
             return
         }
         
         let timeInterval = Date().timeIntervalSince(lastDate)
-        remainingTime = max(0, 86400 - Int(timeInterval)) // 86400 seconds = 24 hours
+        remainingTime = max(0, 86400 - Int(timeInterval))
     }
 
     func startTimer() {
-        // Only start the timer if it's not already started
         if !timerStarted {
             timerStarted = true
-            // Timer to decrement the remaining time every second
             Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
                 if remainingTime > 0 {
                     remainingTime -= 1
@@ -364,9 +416,7 @@ struct DailyQuestionModeView: View {
 }
 
 
-
-
-struct TopicCardView: View {
+struct TopicCardView: View{
     let topic: Topic
     let action: () -> Void
     @Environment(\.colorScheme) var colorScheme
@@ -374,78 +424,134 @@ struct TopicCardView: View {
     @State private var isVisible: Bool = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(topic.name)
-                .font(.headline)
-                .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
-                .opacity(isVisible ? 1 : 0)
-                .offset(y: isVisible ? 0 : -20)
-                .animation(.easeOut(duration: 0.5), value: isVisible)
-            Text(topic.description)
-                .font(.subheadline)
-                .fontWeight(.heavy)
-                .foregroundColor(colorScheme == .dark ? Color.green
-                                 : Color.orange)
-                .opacity(isVisible ? 1 : 0)
-                .offset(y:isVisible ? 0 : -20)
-                .animation(.easeIn(duration: 1), value: isVisible)
-            Button(action: action) {
-                Text("Learn More")
-                    .font(.subheadline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .foregroundColor(colorScheme == .dark ? Color.black : Color.white)
-                    .background(colorScheme == .dark ? Color.mint : Color.blue)
-                    .cornerRadius(10)
+            HStack {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(topic.name)
+                        .font(.headline)
+                        .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
+                        .opacity(isVisible ? 1 : 0)
+                        .offset(y: isVisible ? 0 : -20)
+                        .animation(.easeOut(duration: 0.5), value: isVisible)
+                    
+                    Button(action: action) {
+                        Text("Learn More")
+                            .font(.subheadline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .foregroundColor(colorScheme == .dark ? Color.black : Color.white)
+                            .background(colorScheme == .dark ? Color.mint : Color.blue)
+                            .cornerRadius(10)
+                    }
+                    .opacity(isVisible ? 1 : 0)
+                    .offset(y: isVisible ? 0 : -20)
+                    .animation(.easeInOut(duration: 1.5), value: isVisible)
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding()
             }
-            .opacity(isVisible ? 1 : 0)
-            .offset(y: isVisible ? 0 : -20)
-            .animation(.easeInOut(duration: 1.5), value: isVisible)
-            .buttonStyle(PlainButtonStyle())
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 15)
-                .fill(colorScheme == .dark ? Color.purple : Color.white)
-                .shadow(
-                    color: colorScheme == .dark ? Color.black.opacity(0.3) : Color.black.opacity(0.1),
-                    radius: 8, x: 0, y: 5
-                )
-        )
-        .padding(.horizontal)
-        .onAppear{
-            withAnimation{
-                isVisible=true
+            .background(
+                RoundedRectangle(cornerRadius: 15)
+                    .fill(colorScheme == .dark ? Color.purple.opacity(0.6) : Color.white.opacity(0.8))
+                    .shadow(
+                        color: colorScheme == .dark ? Color.black.opacity(0.3) : Color.black.opacity(0.1),
+                        radius: 8, x: 0, y: 5
+                    )
+            )
+            .padding(.horizontal)
+            .onAppear {
+                withAnimation {
+                    isVisible = true
+                }
             }
         }
-    }
 }
 
 
 struct TopicDetailView:View {
     let topic:Topic
     @Binding var currentView:String?
+    @State private var isVideoPlaying=false
     
     var body: some View {
-        VStack {
-            Text(topic.name)
-                .padding()
+        ZStack{
+            VStack {
+                Text(topic.name)
+                    .padding()
+                    .font(.headline)
+                Text(topic.description)
+                    .padding()
+                
+                Button("Take Quiz"){
+                    currentView="quiz"
+                }
+                
                 .font(.headline)
-            Text(topic.description)
                 .padding()
-            
-            Button("Take Quiz"){
-                currentView="quiz"
+                .foregroundColor(.black)
+                .background(.mint)
+                .cornerRadius(10)
+                .buttonStyle(PlainButtonStyle())
             }
-            
-            .font(.headline)
             .padding()
-            .foregroundColor(.black)
-            .background(.mint)
-            .cornerRadius(10)
-            .buttonStyle(PlainButtonStyle())
+            .blur(radius: isVideoPlaying ? 10 : 0)
+            
+            if isVideoPlaying{
+                ZStack{
+                    Color.black.opacity(0.5)
+                        .edgesIgnoringSafeArea(.all)
+                    
+                    VideoPlayerView(videoName: "\(topic.name.lowercased())_background", isPlaying: $isVideoPlaying)
+                        .frame(width: 300, height: 300)
+                        .cornerRadius(10)
+                }
+            }
         }
-        .padding()
+        .toolbar{
+            ToolbarItem(placement: .automatic){
+                Button(action: {
+                    isVideoPlaying=true
+                }){
+                    Image(systemName: "video.fill")
+                        .font(.title)
+                }
+            }
+        }
+    }
+}
+
+
+struct VideoPlayerView: View {
+    let videoName:String
+    @Binding var isPlaying:Bool
+    
+    var body: some View {
+        ZStack{
+            if let url=Bundle.main.url(forResource: videoName, withExtension: "mp4"){
+                VideoPlayer(player:AVPlayer(url: url))
+                    .onDisappear {
+                        isPlaying=false
+                    }
+            }
+            else{
+                Text("Video not found")
+                    .foregroundColor(.purple)
+                    .padding()
+            }
+            VStack{
+                HStack{
+                    Spacer()
+                    Button(action:{
+                        isPlaying=false
+                    }){
+                        Image(systemName: "circle.fill")
+                            .font(.title)
+                            .foregroundColor(.purple)
+                            .padding()
+                    }
+                }
+                Spacer()
+            }
+        }
     }
 }
 
@@ -472,7 +578,7 @@ let topics: [Topic] = [
     ),
     Topic(
         name: "Kernel",
-        description: "The kernel is the core part of an operating system.",
+        description: "Connection between hardware and software",
         questions: [
             "What is a kernel?": ["Core of an OS", "User interface", "File system", "Storage device"],
             "What is the role of the kernel?": ["Manage hardware", "Process emails", "Run apps", "Handle network requests"]
@@ -493,7 +599,20 @@ let topics: [Topic] = [
             "What is round-robin scheduling?": "Equal time for processes",
             "What is the goal of scheduling?": "Maximize CPU usage"
         ]
-    )
+    ),
+    Topic(
+        name: "Deadlock",
+        description: "Deadlock is a situation in computing where two or more processes are unable to proceed because each is waiting for the other to release resources.",
+        questions: [
+            "Which one of the following is the deadlock avoidance algorithm?": ["banker’s algorithm", "round-robin algorithm", "elevator algorithm", "First come first served"],
+            "A problem encountered in multitasking when a process is perpetually denied necessary resources is called?": ["Deadlock", "Starvation", "Inversion", "Aging"]
+        ],
+        correctAnswers: [
+            "Which one of the following is the deadlock avoidance algorithm?": "banker’s algorithm",
+            "A problem encountered in multitasking when a process is perpetually denied necessary resources is called?": "Starvation"
+        ]
+    ),
+    
 ]
 
 struct QuizView: View {
@@ -513,6 +632,8 @@ struct QuizView: View {
     @State private var hintUsed: Bool = false
     @State private var hintAvailable:Bool=false
     @State private var hintText: String? = nil
+    @State private var lifeLines=["50/50":true,"Skip Question":true]
+    @State private var remainingAnswers:[String]?=nil
     @Environment(\.colorScheme) var colorScheme
     let topic: Topic
     
@@ -539,7 +660,41 @@ struct QuizView: View {
                 }
                 
                 let question = Array(topic.questions.keys)[questionIndex]
-                let answers = topic.questions[question]!
+                let answers = remainingAnswers ?? topic.questions[question]!
+                
+                
+                HStack{
+                    Spacer()
+                    
+                        Button(action:{
+                            skipQuestions()
+                        }){
+                            Text("Skip")
+                                .font(.headline)
+                                .padding()
+                        }
+                        .foregroundColor(.white)
+                        .background(lifeLines["Skip Question"] == true ? Color.purple : Color.gray)
+                        .cornerRadius(10)
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.bottom, 10)
+                        .disabled(lifeLines["Skip Question"] == false)
+                    
+                        Button(action:{
+                            use5050(for: question)
+                        })
+                        {
+                            Text("50/50")
+                                .font(.headline)
+                                .padding()
+                        }
+                        .foregroundColor(.white)
+                        .background(lifeLines["50/50"] == true ? Color.purple : Color.gray)
+                        .cornerRadius(10)
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.bottom, 10)
+                        .disabled(lifeLines["50/50"] == false)
+                }
                 
                 Text(question)
                     .font(.title3)
@@ -562,6 +717,8 @@ struct QuizView: View {
                     .disabled(isAnswered)
                 }
                 
+                
+                
                 if hintAvailable && !hintUsed {
                     Button(action: {
                         hintUsed = true
@@ -572,8 +729,6 @@ struct QuizView: View {
                             .font(.headline)
                             .padding()
                             .frame(maxWidth: .infinity)
-                           
-                            
                     }
                     .buttonStyle(PlainButtonStyle())
                     .foregroundColor(.yellow)
@@ -639,7 +794,7 @@ struct QuizView: View {
     func nextQuestion() {
         if questionIndex + 1 >= topic.questions.count {
             stopTimer()
-            finalScore = Int(adjustedScore) // Set finalScore to the adjusted score
+            finalScore = Int(adjustedScore)
             currentView = "endPage"
         } else {
             questionIndex += 1
@@ -650,6 +805,7 @@ struct QuizView: View {
             hintAvailable=false
             hintText = nil
             startHintTimer()
+            remainingAnswers=nil
         }
     }
     
@@ -675,10 +831,24 @@ struct QuizView: View {
             }
         }
     }
+    
+    func skipQuestions() {
+        if lifeLines["Skip Question"]==true{
+            nextQuestion()
+            lifeLines["Skip Question"]=false
+        }
+    }
+    
+    func use5050(for question:String) {
+        if let correctAnswer = topic.correctAnswers[question], lifeLines["50/50"]==true{
+            var incorrectAnswers=topic.questions[question]!.filter {$0 != correctAnswer}
+            incorrectAnswers.shuffle()
+            let eliminatedAnswers=incorrectAnswers.prefix(2)
+            remainingAnswers=topic.questions[question]!.filter {!eliminatedAnswers.contains($0)}
+            lifeLines["50/50"]=false
+        }
+    }
 }
-
-
-
 
 
 struct EndPageView: View {
@@ -686,8 +856,9 @@ struct EndPageView: View {
     let score: Int
     let userName:String
     @State private var isUserNameEntered:Bool=false
+    @Binding var selectedTopic: Topic?
     
-    @Binding var leaderboard:[(name:String,score:Int)]
+    @Binding var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]
     
     var body: some View {
         VStack {
@@ -728,7 +899,7 @@ struct EndPageView: View {
                 .cornerRadius(10)
                 .buttonStyle(PlainButtonStyle())
                 
-                Button("View Leaderboard"){
+                Button("View Leaderboard", systemImage: "list.number"){
                     saveScoreToLeaderboard()
                     currentView="leaderboard"
                 }
@@ -745,47 +916,70 @@ struct EndPageView: View {
     }
     
     private func saveScoreToLeaderboard() {
-        if let existingIndex=leaderboard.firstIndex(where:{$0.name == userName}){
-            if leaderboard[existingIndex].score<score{
-                leaderboard[existingIndex].score=score
+        guard let topic=selectedTopic else{
+            return
+        }
+        if let userIndex=leaderboard.firstIndex(where: {$0.name == userName}){
+            if let topicIndex=leaderboard[userIndex].topics.firstIndex(where: {$0.topic == topic.name}){
+                leaderboard[userIndex].topics[topicIndex].score=score
+            }
+            else{
+                leaderboard[userIndex].topics.append((topic: topic.name, score:score))
             }
         }
         else{
-            leaderboard.append((name:userName,score:score))
+            leaderboard.append((name: userName, topics:[(topic:topic.name, score:score)]))
         }
-        leaderboard.sort{$0.score > $1.score}
     }
 }
 
 struct LeaderboardView: View {
     @Binding var currentView: String?
-    let leaderboard: [(name: String, score: Int)]
-    
+    let leaderboard: [(name: String, topics:[(topic:String,score:Int)])]
+    let totalQuizzes: Int
+    @State private var selectedUser: UserDetail?
+    @State private var isPopoverPresented: Bool = false
+
     var body: some View {
         VStack {
             Text("Leaderboard")
                 .font(.largeTitle)
                 .padding()
-            
-            List {
-                ForEach(leaderboard, id: \.name) { entry in
-                    HStack {
+
+            List{
+                ForEach(leaderboard, id:\.name){
+                    entry in
+                    Button{
+                        let quizzes=entry.topics.map{
+                            QuizDetail(topic:$0.topic, score:$0.score)
+                        }
+                        selectedUser=UserDetail(name:entry.name,quizzes:quizzes)
+                        isPopoverPresented=true
+                    }
+                label: {
+                    HStack{
                         Text(entry.name)
                             .font(.headline)
                         Spacer()
-                        Text("\(entry.score)")
+                        Text("\(entry.topics.count)/\(totalQuizzes)")
                             .font(.subheadline)
                     }
-                    .padding()
+                    }
                 }
             }
-            Button("Homepage", systemImage: "homekit") {
-                currentView = "home"
+            .frame(minHeight: 400)
+            .popover(isPresented: $isPopoverPresented) {
+                if let user=selectedUser{
+                    UserDetailView(user: user)
+                }
+            }
+            Button("HomePage"){
+                currentView="home"
             }
             .font(.headline)
             .padding()
-            .background(.mint)
-            .foregroundColor(.black)
+            .background(.purple)
+            .foregroundColor(.white)
             .cornerRadius(10)
             .buttonStyle(PlainButtonStyle())
         }
@@ -793,8 +987,47 @@ struct LeaderboardView: View {
     }
 }
 
+struct UserDetail: Identifiable {
+    let id=UUID()
+    let name:String
+    let quizzes:[QuizDetail]
+}
+
+struct QuizDetail: Identifiable {
+    let id=UUID()
+    let topic:String
+    let score:Int
+}
+
+struct UserDetailView: View {
+    var user:UserDetail
+    var body: some View {
+        VStack{
+            Text("\(user.name)'s Quiz Details")
+                .font(.largeTitle)
+                .padding()
+            
+            List(user.quizzes, id:\.id){
+                quiz in
+                HStack{
+                    Text("Topic: \(quiz.topic)")
+                        .font(.headline)
+                    Spacer()
+                    Text("Score: \(quiz.score)")
+                        .font(.subheadline)
+                }
+            }
+            .frame(minHeight: 200)
+        }
+    }
+}
+
+
+
 
 #Preview {
     ContentView()
 }
 
+
+//a task within a given process
