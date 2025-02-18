@@ -742,6 +742,8 @@ struct QuizView: View {
     @State private var hintText: String? = nil
     @State private var lifeLines=["50/50":true,"Skip Question":true]
     @State private var remainingAnswers:[String]?=nil
+    @State private var showQuestion=false
+    @State private var showOptions=false
     @Environment(\.colorScheme) var colorScheme
     let topic: Topic
     
@@ -804,29 +806,42 @@ struct QuizView: View {
                         .padding(.bottom, 10)
                         .disabled(lifeLines["50/50"] == false)
                 }
-                
-                Text(question)
-                    .font(.title3)
-                    .padding()
-                    .multilineTextAlignment(.center)
-                
-                ForEach(answers, id: \.self) { answer in
-                    Button(action: {
-                        guard !isAnswered else { return }
-                        selectOption(answer, for: question)
-                    }) {
-                        Text(answer)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .foregroundColor(.black)
+        
+                    Text(question)
+                        .font(.title3)
+                        .padding()
+                        .multilineTextAlignment(.center)
+                        .opacity(showQuestion ? 1 : 0)
+                        .rotation3DEffect(
+                            .degrees(showQuestion ? 0 : -90),
+                            axis: (x: 0, y: 1, z: 0)
+                    )
+                        .animation(.easeInOut(duration: 0.5), value: showQuestion)
+
+                    ForEach(answers, id: \.self) { answer in
+                        Button(action: {
+                            guard !isAnswered else { return }
+                            selectOption(answer, for: question)
+                        }) {
+                            Text(answer)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .foregroundColor(.black)
+                        }
+                        .background(backgroundColor(for: answer))
+                        .cornerRadius(10)
+                        .padding(.horizontal, 10)
+                        .rotation3DEffect(
+                            .degrees(showOptions ? 0 : -90),
+                            axis:(x:0,y:1,z:0)
+                        )
+                        .opacity(showOptions ? 1 : 0)
+                        .animation(.easeOut(duration: 0.5), value:showOptions)
+                        .disabled(isAnswered)
+                        .onAppear{
+                            animateQuestionsAndOptions()
+                        }
                     }
-                    .background(backgroundColor(for: answer))
-                    .cornerRadius(10)
-                    .padding(.horizontal, 10)
-                    .disabled(isAnswered)
-                }
-                
-                
                 
                 if hintAvailable && !hintUsed {
                     Button(action: {
@@ -857,6 +872,7 @@ struct QuizView: View {
             .onAppear {
                 startTimer()
                 startHintTimer()
+                animateQuestionsAndOptions()
             }
             .onDisappear {
                 stopTimer()
@@ -955,6 +971,15 @@ struct QuizView: View {
             let eliminatedAnswers=incorrectAnswers.prefix(2)
             remainingAnswers=topic.questions[question]!.filter {!eliminatedAnswers.contains($0)}
             lifeLines["50/50"]=false
+        }
+    }
+    
+    func animateQuestionsAndOptions(){
+        DispatchQueue.main.asyncAfter(deadline: .now()+0.5){
+            showQuestion=true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now()+1.5){
+            showOptions=true
         }
     }
 }
@@ -1133,10 +1158,10 @@ struct UserDetailView: View {
 }
 
 
+
 #Preview {
     ContentView()
 }
-
 
 //a task within a given process
 
