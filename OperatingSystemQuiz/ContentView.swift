@@ -104,7 +104,7 @@ struct LoginView: View {
                         handleuserLogo()
                     }
                     .padding(.leading,10)
-                    .background(.purple.opacity(0.8))
+//                    .background(.purple.opacity(0.8))
                     .cornerRadius(10)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
