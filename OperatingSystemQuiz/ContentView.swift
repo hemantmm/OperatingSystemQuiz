@@ -35,6 +35,7 @@ struct ContentView: View {
 //    @State private var leaderboard:[(name:String,score:Int, topics:[String])]=[]
     @State private var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]=[]
     let totalQuizzes:Int=4
+    @State private var earnedBadges:[String] = []
     
     var body: some View {
         VStack {
@@ -58,10 +59,13 @@ struct ContentView: View {
                 }
             }
             else if currentView=="endPage"{
-                EndPageView(currentView: $currentView, score: finalScore, userName: userName, selectedTopic: $selectedTopic, leaderboard: $leaderboard)
+                EndPageView(currentView: $currentView, earnedBadges:$earnedBadges, score: finalScore, userName: userName, selectedTopic: $selectedTopic, leaderboard: $leaderboard)
             }
             else if currentView=="leaderboard"{
                 LeaderboardView(currentView: $currentView, leaderboard: leaderboard, totalQuizzes: totalQuizzes)
+            }
+            else if currentView=="badges"{
+                BadgesView(currentView: $currentView,earnedBadges:earnedBadges)
             }
         }
         .padding()
@@ -83,6 +87,7 @@ struct LoginView: View {
     
     var body: some View {
         ZStack{
+//            Color(NSColor)
             //                Image("loginbackground")
             //                .resizable()
             //                .scaledToFill()
@@ -104,7 +109,7 @@ struct LoginView: View {
                         handleuserLogo()
                     }
                     .padding(.leading,10)
-//                    .background(.purple.opacity(0.8))
+                    .background(.purple.opacity(0.8))
                     .cornerRadius(10)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
@@ -134,7 +139,7 @@ struct LoginView: View {
                     .textFieldStyle(PlainTextFieldStyle())
                     .foregroundColor(.white)
                     .font(.title)
-                //                    .shadow(color: .red ,radius: 5,x:0,y:0)
+                //  .shadow(color: .red ,radius: 5,x:0,y:0)
                     .padding()
                 
                 Button(action: {
@@ -256,7 +261,7 @@ struct HomeView: View {
                     startTimer()
                 }
 
-                Button("Daily Question Mode") {
+                Button("Daily Question Mode", systemImage:"questionmark.circle") {
                     currentView = "dailyQuestionMode"
                 }
                 .font(.headline)
@@ -269,11 +274,12 @@ struct HomeView: View {
                 if remainingTime > 0 {
                     Text("Next challenge available in \(remainingTime) seconds")
                         .font(.subheadline)
-                        .foregroundColor(.red)
+                        .foregroundColor(.white)
+                        .fontWeight(.semibold)
                         .padding()
                 }
 
-                Button("View Leaderboard") {
+                Button("View Leaderboard",systemImage: "list.number") {
                     currentView = "leaderboard"
                 }
                 .font(.headline)
@@ -283,10 +289,21 @@ struct HomeView: View {
                 .cornerRadius(10)
                 .buttonStyle(PlainButtonStyle())
                 .fontWeight(.bold)
+                
+                Button("Badges", systemImage: "trophy.circle") {
+                    currentView = "badges"
+                }
+                .font(.headline)
+                .padding()
+                .background(.white)
+                .foregroundColor(.purple)
+                .cornerRadius(10)
+                .buttonStyle(PlainButtonStyle())
             }
             .padding()
         }
         .background(.purple)
+        .cornerRadius(10)
 //        .background(.orange)
     }
     
@@ -929,8 +946,8 @@ struct QuizView: View {
             hintUsed = false
             hintAvailable=false
             hintText = nil
-            startHintTimer()
             remainingAnswers=nil
+            startHintTimer()
         }
     }
     
@@ -950,6 +967,7 @@ struct QuizView: View {
     }
     
     func startHintTimer() {
+        hintAvailable=false
         DispatchQueue.main.asyncAfter(deadline: .now()+5){
             if !isAnswered{
                 hintAvailable=true
@@ -987,6 +1005,7 @@ struct QuizView: View {
 
 struct EndPageView: View {
     @Binding var currentView: String?
+    @Binding var earnedBadges: [String]
     let score: Int
     let userName:String
     @State private var isUserNameEntered:Bool=false
@@ -1054,6 +1073,13 @@ struct EndPageView: View {
         guard let topic=selectedTopic else{
             return
         }
+        
+        if score==topic.questions.count{
+            if !earnedBadges.contains(topic.name){
+                earnedBadges.append(topic.name)
+            }
+        }
+        
         if let userIndex=leaderboard.firstIndex(where: {$0.name == userName}){
             if let topicIndex=leaderboard[userIndex].topics.firstIndex(where: {$0.topic == topic.name}){
                 leaderboard[userIndex].topics[topicIndex].score=score
@@ -1157,11 +1183,96 @@ struct UserDetailView: View {
     }
 }
 
-
+struct BadgesView:View {
+    @Binding var currentView: String?
+    let earnedBadges: [String]
+    var body: some View {
+        VStack{
+            Text("Your Achievements")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.top,20)
+                .foregroundColor(.indigo)
+            
+            if earnedBadges.isEmpty {
+                VStack(spacing: 15) {
+                    Image(systemName: "star.slash")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
+                        .foregroundColor(.gray.opacity(0.6))
+                    Text("No badges earned yet!")
+                        .font(.title2)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.gray.opacity(0.6))
+                    
+                    Text("Start taking quiz and earn your first badge!")
+                        .font(.body)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.purple)
+                        .padding(.horizontal,20)
+                }
+                .padding(.vertical,40)
+            }
+            else{
+                ScrollView{
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], spacing: 20){
+                        ForEach(earnedBadges,id:\.self){
+                            badge in
+                            VStack{
+                                Image(systemName: "medal.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 80, height: 80)
+                                    .foregroundColor(.yellow)
+                                    .shadow(radius: 5)
+                                
+                                Text(badge)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                    .padding(.top,5)
+                            }
+                            .padding()
+                            .background(                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.white.opacity(0.9))
+                                .shadow(radius: 5)
+                            )
+                            .frame(width: 120, height: 140)
+                            .scaleEffect(earnedBadges.contains(badge) ? 1.1 : 1.0)
+                            .animation(.spring(),value:earnedBadges)
+                        }
+                    }
+                    .padding()
+                }
+            }
+            Button(action:{
+                currentView="home"
+            }){
+                HStack{
+                    Image(systemName: "house.fill")
+                    Text("Home page")
+//                    Image(systemName:"arrowshape.turn.up.backward.circle")
+                }
+                .font(.headline)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(.yellow.opacity(0.7))
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                .shadow(radius: 3)
+                
+            }
+            .padding(.horizontal,20)
+            .buttonStyle(PlainButtonStyle())
+            .padding(.top,20)
+        }
+        .padding()
+        .background(LinearGradient(gradient:Gradient(colors:[.purple,.white]), startPoint: .top, endPoint: .bottom))
+    }
+}
 
 #Preview {
     ContentView()
 }
 
-//a task within a given process
-
+//a task within a given process - thread
