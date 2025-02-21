@@ -67,10 +67,16 @@ struct ContentView: View {
             else if currentView=="badges"{
                 BadgesView(currentView: $currentView,earnedBadges:earnedBadges)
             }
+            else if currentView=="profile"{
+                ProfileView(currentView: $currentView, userName: userName, leaderboard: leaderboard)
+            }
         }
         .padding()
     }
 }
+
+
+
 
 struct LoginView: View {
     
@@ -175,6 +181,7 @@ struct LoginView: View {
     private func handleuserLogo(){
         if !userName.isEmpty && !email.isEmpty && isValidEmail(email){
             userInitial=String(userName.prefix(1)).uppercased()
+            UserDefaults.standard.set(email,forKey: "userEmail")
             showAlert=true
         }
     }
@@ -183,6 +190,115 @@ struct LoginView: View {
         let emailRegEx="[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailTest=NSPredicate(format: "SELF MATCHES %@", emailRegEx)
         return emailTest.evaluate(with: email)
+    }
+}
+
+struct ProfileView:View{
+    @Binding var currentView:String?
+    var userName:String
+    @State private var email:String=""
+    var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]
+    
+    var body: some View{
+        VStack(spacing:20){
+            Text("Profile")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.top,20)
+            
+            ZStack{
+                Circle()
+                    .fill(LinearGradient(gradient:Gradient(colors:[.purple,.blue]),startPoint: .topLeading,endPoint: .bottomTrailing))
+                    .frame(width: 100,height: 100)
+                    .shadow(radius: 5)
+                
+                Text(userName.prefix(1).uppercased())
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+            }
+            VStack(spacing:5){
+                Text(userName)
+                    .font(.title)
+                    .fontWeight(.semibold)
+                
+                Text(email.isEmpty ? "No email provided" : email)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+            VStack(spacing: 10){
+                HStack{
+                    StatView(title:"Rank",value:"\(leaderboardRank)")
+                    Spacer()
+                    StatView(title:"Quiz Attempted",value:"\(totalQuizzesAttempted)")
+                }
+            }
+            .padding()
+            .background(LinearGradient(gradient: Gradient(colors: [.purple,.blue]), startPoint: .leading, endPoint: .trailing))
+            .cornerRadius(10)
+            .padding(.horizontal)
+            
+            Spacer()
+            
+            Button(action:{
+                currentView="home"
+            }){
+                Text("Back to Home")
+                    .font(.title2)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(LinearGradient(gradient: Gradient(colors: [.purple, .blue]), startPoint: .leading, endPoint: .trailing))
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                    .shadow(radius: 3)
+            }
+            .padding(.horizontal)
+        }
+        .padding()
+        .onAppear{
+            fetchEmail()
+        }
+    }
+    
+    private func fetchEmail(){
+        if let savedEmail=UserDefaults.standard.string(forKey: "userEmail"){
+            email=savedEmail
+        }
+    }
+    
+    private var totalQuizzesAttempted:Int{
+        return leaderboard.first(where: {$0.name==userName})?.topics.count ?? 0
+    }
+    
+    private var leaderboardRank:Int{
+        if let index=leaderboard.sorted(by: {
+            $0.topics.reduce(0){
+                $0+$1.score
+            }
+            > $1.topics.reduce(0){$0+$1.score}
+        }).firstIndex(where: {$0.name==userName}){
+            return index+1
+        }
+        return 0
+    }
+}
+
+struct StatView:View{
+    var title:String
+    var value:String
+    
+    var body: some View{
+        VStack{
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -229,9 +345,25 @@ struct HomeView: View {
                         userLogoColor=generateRandomColor()
                         currentView = "login"
                     }
+//                    .padding()
+//                    .background(Color.red.opacity(0.2))
+//                    .cornerRadius(10)
+                    .font(.headline)
                     .padding()
-                    .background(Color.red.opacity(0.2))
+                    .background(.white)
+                    .foregroundColor(.purple)
                     .cornerRadius(10)
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button("Profile", systemImage: "person.crop.circle") {
+                        currentView = "profile"
+                    }
+                    .font(.headline)
+                    .padding()
+                    .background(.white)
+                    .foregroundColor(.purple)
+                    .cornerRadius(10)
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding()
             }
@@ -299,6 +431,7 @@ struct HomeView: View {
                 .foregroundColor(.purple)
                 .cornerRadius(10)
                 .buttonStyle(PlainButtonStyle())
+                
             }
             .padding()
         }
@@ -860,35 +993,35 @@ struct QuizView: View {
                         }
                     }
                 
-                if hintAvailable && !hintUsed {
-                    Button(action: {
-                        hintUsed = true
-                        hintText = "Here's a hint: \(getHint(for: question))"
-                        adjustedScore = max(adjustedScore - 1, 0)
-                    }) {
-                        Text("Hint")
-                            .font(.headline)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .foregroundColor(.yellow)
-                    .background(Color.black)
-                    .cornerRadius(10)
-                    .padding(.bottom, 10)
-                }
-                
-                if let hintText = hintText {
-                    Text(hintText)
-                        .font(.body)
-                        .foregroundColor(.orange)
-                        .padding(.bottom)
-                }
+//                if hintAvailable && !hintUsed {
+//                    Button(action: {
+//                        hintUsed = true
+//                        hintText = "Here's a hint: \(getHint(for: question))"
+//                        adjustedScore = max(adjustedScore - 1, 0)
+//                    }) {
+//                        Text("Hint")
+//                            .font(.headline)
+//                            .padding()
+//                            .frame(maxWidth: .infinity)
+//                    }
+//                    .buttonStyle(PlainButtonStyle())
+//                    .foregroundColor(.yellow)
+//                    .background(Color.black)
+//                    .cornerRadius(10)
+//                    .padding(.bottom, 10)
+//                }
+//                
+//                if let hintText = hintText {
+//                    Text(hintText)
+//                        .font(.body)
+//                        .foregroundColor(.orange)
+//                        .padding(.bottom)
+//                }
             }
             .padding()
             .onAppear {
                 startTimer()
-                startHintTimer()
+//                startHintTimer()
                 animateQuestionsAndOptions()
             }
             .onDisappear {
@@ -947,7 +1080,7 @@ struct QuizView: View {
             hintAvailable=false
             hintText = nil
             remainingAnswers=nil
-            startHintTimer()
+//            startHintTimer()
         }
     }
     
@@ -964,15 +1097,6 @@ struct QuizView: View {
     func stopTimer() {
         timer?.invalidate()
         timer = nil
-    }
-    
-    func startHintTimer() {
-        hintAvailable=false
-        DispatchQueue.main.asyncAfter(deadline: .now()+5){
-            if !isAnswered{
-                hintAvailable=true
-            }
-        }
     }
     
     func skipQuestions() {
@@ -1069,29 +1193,56 @@ struct EndPageView: View {
         
         .padding()
     }
+//    private func saveScoreToLeaderboard() {
+//        guard let topic=selectedTopic else{
+//            return
+//        }
+//        
+//        if score==topic.questions.count{
+//            if !earnedBadges.contains(topic.name){
+//                earnedBadges.append(topic.name)
+//            }
+//        }
+//        
+//        if let userIndex=leaderboard.firstIndex(where: {$0.name == userName}){
+//            if let topicIndex=leaderboard[userIndex].topics.firstIndex(where: {$0.topic == topic.name}){
+//                leaderboard[userIndex].topics[topicIndex].score=score
+//            }
+//            else{
+//                leaderboard[userIndex].topics.append((topic: topic.name, score:score))
+//            }
+//        }
+//        else{
+//            leaderboard.append((name: userName, topics:[(topic:topic.name, score:score)]))
+//        }
+//    }
     private func saveScoreToLeaderboard() {
-        guard let topic=selectedTopic else{
-            return
-        }
+        guard let topic = selectedTopic else { return }
         
-        if score==topic.questions.count{
-            if !earnedBadges.contains(topic.name){
-                earnedBadges.append(topic.name)
+        DispatchQueue.main.async {
+            if score == topic.questions.count {
+                if !earnedBadges.contains(topic.name) {
+                    earnedBadges.append(topic.name)
+                }
             }
-        }
-        
-        if let userIndex=leaderboard.firstIndex(where: {$0.name == userName}){
-            if let topicIndex=leaderboard[userIndex].topics.firstIndex(where: {$0.topic == topic.name}){
-                leaderboard[userIndex].topics[topicIndex].score=score
+
+            if let userIndex = leaderboard.firstIndex(where: { $0.name == userName }) {
+                if let topicIndex = leaderboard[userIndex].topics.firstIndex(where: { $0.topic == topic.name }) {
+                    leaderboard[userIndex].topics[topicIndex].score = score
+                } else {
+                    leaderboard[userIndex].topics.append((topic: topic.name, score: score))
+                }
+            } else {
+                leaderboard.append((name: userName, topics: [(topic: topic.name, score: score)]))
             }
-            else{
-                leaderboard[userIndex].topics.append((topic: topic.name, score:score))
+
+            // Sort leaderboard to update ranks
+            leaderboard.sort {
+                $0.topics.reduce(0) { $0 + $1.score } > $1.topics.reduce(0) { $0 + $1.score }
             }
-        }
-        else{
-            leaderboard.append((name: userName, topics:[(topic:topic.name, score:score)]))
         }
     }
+
 }
 
 struct LeaderboardView: View {
@@ -1107,27 +1258,49 @@ struct LeaderboardView: View {
                 .font(.largeTitle)
                 .padding()
 
-            List{
-                ForEach(leaderboard, id:\.name){
-                    entry in
-                    Button{
-                        let quizzes=entry.topics.map{
-                            QuizDetail(topic:$0.topic, score:$0.score)
+//            List{
+//                ForEach(leaderboard, id:\.name){
+//                    entry in
+//                    Button{
+//                        let quizzes=entry.topics.map{
+//                            QuizDetail(topic:$0.topic, score:$0.score)
+//                        }
+//                        selectedUser=UserDetail(name:entry.name,quizzes:quizzes)
+//                        isPopoverPresented=true
+//                    }
+//                label: {
+//                    HStack{
+//                        Text(entry.name)
+//                            .font(.headline)
+//                        Spacer()
+//                        Text("\(entry.topics.count)/\(totalQuizzes)")
+//                            .font(.subheadline)
+//                    }
+//                    }
+//                }
+//            }
+            List {
+                ForEach(leaderboard.sorted(by: {
+                    $0.topics.reduce(0) { $0 + $1.score } > $1.topics.reduce(0) { $0 + $1.score }
+                }), id: \.name) { entry in
+                    Button {
+                        let quizzes = entry.topics.map {
+                            QuizDetail(topic: $0.topic, score: $0.score)
                         }
-                        selectedUser=UserDetail(name:entry.name,quizzes:quizzes)
-                        isPopoverPresented=true
-                    }
-                label: {
-                    HStack{
-                        Text(entry.name)
-                            .font(.headline)
-                        Spacer()
-                        Text("\(entry.topics.count)/\(totalQuizzes)")
-                            .font(.subheadline)
-                    }
+                        selectedUser = UserDetail(name: entry.name, quizzes: quizzes)
+                        isPopoverPresented = true
+                    } label: {
+                        HStack {
+                            Text(entry.name)
+                                .font(.headline)
+                            Spacer()
+                            Text("\(entry.topics.count)/\(totalQuizzes)")
+                                .font(.subheadline)
+                        }
                     }
                 }
             }
+
             .frame(minHeight: 400)
             .popover(isPresented: $isPopoverPresented) {
                 if let user=selectedUser{
@@ -1192,7 +1365,7 @@ struct BadgesView:View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .padding(.top,20)
-                .foregroundColor(.indigo)
+                .foregroundColor(.white)
             
             if earnedBadges.isEmpty {
                 VStack(spacing: 15) {
@@ -1200,17 +1373,18 @@ struct BadgesView:View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 100, height: 100)
-                        .foregroundColor(.gray.opacity(0.6))
+                        .foregroundColor(.white)
                     Text("No badges earned yet!")
                         .font(.title2)
                         .multilineTextAlignment(.center)
-                        .foregroundColor(.gray.opacity(0.6))
+                        .foregroundColor(.white)
                     
                     Text("Start taking quiz and earn your first badge!")
                         .font(.body)
                         .multilineTextAlignment(.center)
                         .foregroundColor(.purple)
                         .padding(.horizontal,20)
+                        .fontWeight(.bold)
                 }
                 .padding(.vertical,40)
             }
@@ -1229,7 +1403,7 @@ struct BadgesView:View {
                                 
                                 Text(badge)
                                     .font(.headline)
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.purple)
                                     .padding(.top,5)
                             }
                             .padding()
@@ -1260,7 +1434,7 @@ struct BadgesView:View {
                 .foregroundColor(.white)
                 .cornerRadius(10)
                 .shadow(radius: 3)
-                
+                .fontWeight(.heavy)
             }
             .padding(.horizontal,20)
             .buttonStyle(PlainButtonStyle())
