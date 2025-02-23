@@ -32,10 +32,10 @@ struct ContentView: View {
     @State private var selectedTopic:Topic?=nil
     @State private var userName:String=""
     @State private var userInitial:String=""
-//    @State private var leaderboard:[(name:String,score:Int, topics:[String])]=[]
     @State private var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]=[]
     let totalQuizzes:Int=4
     @State private var earnedBadges:[String] = []
+    @State private var profileImage: NSImage? = nil
     
     var body: some View {
         VStack {
@@ -43,7 +43,7 @@ struct ContentView: View {
                 LoginView(currentView: $currentView, userName: $userName, userInitial: $userInitial,earnedBadges:$earnedBadges)
             }
             else if currentView=="home"{
-                HomeView(currentView: $currentView, selectedTopic: $selectedTopic, leaderboard: $leaderboard, userInitial: $userInitial, userName:$userName)
+                HomeView(currentView: $currentView, selectedTopic: $selectedTopic, leaderboard: $leaderboard, userInitial: $userInitial, userName:$userName,profileImage: $profileImage)
             }
             else if currentView=="dailyQuestionMode"{
                 DailyQuestionModeView(currentView: $currentView, userName: $userName)
@@ -68,15 +68,12 @@ struct ContentView: View {
                 BadgesView(currentView: $currentView,earnedBadges:$earnedBadges,userName:userName)
             }
             else if currentView=="profile"{
-                ProfileView(currentView: $currentView, userName: userName, leaderboard: leaderboard)
+                ProfileView(currentView: $currentView, userName: userName, leaderboard: leaderboard,profileImage: $profileImage)
             }
         }
         .padding()
     }
 }
-
-
-
 
 struct LoginView: View {
     
@@ -141,7 +138,6 @@ struct LoginView: View {
                     .textFieldStyle(PlainTextFieldStyle())
                     .foregroundColor(.white)
                     .font(.title)
-                //  .shadow(color: .red ,radius: 5,x:0,y:0)
                     .padding()
                 
                 Button(action: {
@@ -194,7 +190,7 @@ struct ProfileView:View{
     var userName:String
     @State private var email:String=""
     var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]
-    @State private var profileImage:NSImage?=nil
+    @Binding var profileImage: NSImage?
     @State private var streakCount:Int=0
     
     var body: some View{
@@ -215,7 +211,6 @@ struct ProfileView:View{
                         .resizable()
                         .scaledToFill()
                         .frame(width: 100,height: 100)
-                    //                        .foregroundColor(.white)
                         .clipShape(Circle())
                 }
                 else{
@@ -252,12 +247,6 @@ struct ProfileView:View{
             
             Spacer()
             
-            VStack{
-                Text("Daily streak: \(streakCount) days")
-                    .font(.headline)
-                    .foregroundColor(streakCount > 0 ? .orange : .gray)
-            }
-            
             Button(action:{
                 currentView="home"
             }){
@@ -276,7 +265,6 @@ struct ProfileView:View{
         .onAppear{
             fetchEmail()
             loadProfileImage()
-            loadStreak()
         }
     }
     
@@ -286,20 +274,21 @@ struct ProfileView:View{
         }
     }
     
-    private func loadStreak(){
-        streakCount=UserDefaults.standard.integer(forKey: "dailyQuizStreak")
-    }
-    
-    private func loadProfileImage(){
-        if let path=UserDefaults.standard.string(forKey: "profileImagePath"),
-           let image=NSImage(contentsOfFile: path){
-            profileImage=image
+    private func loadProfileImage() {
+        let key = "profileImagePath_\(userName)"
+        if let path = UserDefaults.standard.string(forKey: key),
+           let image = NSImage(contentsOfFile: path) {
+            profileImage = image
+        } else {
+            profileImage = nil
         }
     }
     
-    private func saveProfileImagePath(_ url:URL){
-        UserDefaults.standard.set(url.path,forKey: "profileImagePath")
+    private func saveProfileImagePath(_ url: URL) {
+        let key = "profileImagePath_\(userName)"
+        UserDefaults.standard.set(url.path, forKey: key)
     }
+    
     
     private func selectProfileImage(){
         let panel=NSOpenPanel()
@@ -363,7 +352,7 @@ struct HomeView: View {
     @State private var timerStarted: Bool = false
     @State private var showDropdown: Bool = false
     @State private var userLogoColor:Color=generateRandomColor()
-    @State private var profileImage:NSImage?=nil
+    @Binding var profileImage:NSImage?
 
     @AppStorage("lastChallengeDate") private var lastChallengeDate: Date?
 
@@ -400,9 +389,11 @@ struct HomeView: View {
             .popover(isPresented: $showDropdown) {
                 VStack {
                     Button("Logout") {
+                        UserDefaults.standard.removeObject(forKey: "userEmail")
                         userName=""
                         userInitial=""
                         userLogoColor=generateRandomColor()
+                        profileImage=nil
                         currentView = "login"
                     }
                     .font(.headline)
@@ -433,7 +424,6 @@ struct HomeView: View {
                     .font(.largeTitle)
                     .padding()
                     .fontWeight(.bold)
-//                    .background(.purple)
                 
                 ForEach(topics.indices, id: \.self) { index in
                     TopicCardView(topic: topics[index]) {
@@ -500,12 +490,15 @@ struct HomeView: View {
 //        .background(.orange)
     }
     
-    private func loadProfileImage(){
-        if let path=UserDefaults.standard.string(forKey: "profileImagePath"),
-           let image=NSImage(contentsOfFile: path){
-            profileImage=image
+    private func loadProfileImage() {
+            let key = "profileImagePath_\(userName)"
+            if let path = UserDefaults.standard.string(forKey: key),
+               let image = NSImage(contentsOfFile: path) {
+                profileImage = image
+            } else {
+                profileImage = nil
+            }
         }
-    }
 
     func updateRemainingTime() {
         let userKey="lastChallengeDate_\(userName)"
@@ -548,7 +541,7 @@ struct DailyQuestionModeView: View {
     @State private var selectedAnswer: String? = nil
     @State private var isAnswerCorrect: Bool? = nil
     @State private var confettiCounter: Int = 0
-    @State private var timeRemaining = 20 // Set initial timer to 20 seconds
+    @State private var timeRemaining = 20
 
     
     @AppStorage("lastChallengeDate") private var lastChallengeDate: Date?
@@ -643,7 +636,6 @@ struct DailyQuestionModeView: View {
             stopTimer()
             let userKey="lastChallengeDate_\(userName)"
             UserDefaults.standard.set(Date(), forKey: userKey)
-            updateStreak()
             currentView="home"
         } else {
             questionIndex += 1
@@ -651,20 +643,6 @@ struct DailyQuestionModeView: View {
             isAnswerCorrect = nil
             isAnswered = false
         }
-    }
-    
-    private func updateStreak() {
-        let userKey="lastChallengeDate_\(userName)"
-        let lastDate=UserDefaults.standard.object(forKey: userKey) as? Date ?? Date.distantPast
-        let calendar=Calendar.current
-        let isConsecutiveDay=calendar.isDateInYesterday(lastDate)
-        
-        let streakKey="dailyQuizStreak_\(userName)"
-        var streak=UserDefaults.standard.integer(forKey: streakKey)
-        streak=isConsecutiveDay ? streak+1 : 1
-        
-        UserDefaults.standard.set(streak, forKey: streakKey)
-        UserDefaults.standard.set(Date(), forKey: userKey)
     }
     
     func startTimer() {
