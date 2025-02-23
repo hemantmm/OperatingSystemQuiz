@@ -65,61 +65,64 @@ struct ContentView: View {
                 BadgesView(currentView: $currentView,earnedBadges:$earnedBadges,userName:userName)
             }
             else if currentView=="profile"{
-                ProfileView(currentView: $currentView, userName: userName, leaderboard: leaderboard,profileImage: $profileImage)
+                ProfileView(currentView: $currentView, userName: userName, leaderboard: leaderboard,profileImage: $profileImage, earnedBadges: $earnedBadges)
             }
         }
         .padding()
     }
 }
-struct ProfileView:View{
-    @Binding var currentView:String?
-    var userName:String
-    @State private var email:String=""
-    var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]
+
+struct ProfileView: View {
+    @Binding var currentView: String?
+    var userName: String
+    @State private var email: String = ""
+    var leaderboard: [(name: String, topics: [(topic: String, score: Int)])]
     @Binding var profileImage: NSImage?
-    @State private var streakCount:Int=0
-    
-    var body: some View{
-        VStack(spacing:20){
+    @Binding var earnedBadges: [String]
+    @State private var streakCount: Int = 0
+
+    var body: some View {
+        VStack(spacing: 20) {
             Text("Profile")
                 .font(.largeTitle)
                 .fontWeight(.bold)
-                .padding(.top,20)
+                .padding(.top, 20)
             
-            ZStack{
+            ZStack {
                 Circle()
-                    .fill(LinearGradient(gradient:Gradient(colors:[.purple,.blue]),startPoint: .topLeading,endPoint: .bottomTrailing))
-                    .frame(width: 100,height: 100)
+                    .fill(LinearGradient(gradient: Gradient(colors: [.purple, .blue]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 100, height: 100)
                     .shadow(radius: 5)
                 
-                if let image=profileImage{
-                    Image(nsImage:image)
+                if let image = profileImage {
+                    Image(nsImage: image)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 100,height: 100)
+                        .frame(width: 100, height: 100)
                         .clipShape(Circle())
                 }
             }
             .onTapGesture {
                 selectProfileImage()
             }
-            VStack(spacing: 10){
-                HStack{
-                    StatView(title:"Rank",value:"\(leaderboardRank)")
+            
+            VStack(spacing: 10) {
+                HStack {
+                    StatView(title: "Quizzes Attempted", value: "\(totalQuizzesAttempted)")
                     Spacer()
-                    StatView(title:"Quiz Attempted",value:"\(totalQuizzesAttempted)")
+                    StatView(title: "Badges Earned", value: "\(earnedBadges.count)")
                 }
             }
             .padding()
-            .background(LinearGradient(gradient: Gradient(colors: [.purple,.blue]), startPoint: .leading, endPoint: .trailing))
+            .background(LinearGradient(gradient: Gradient(colors: [.purple, .blue]), startPoint: .leading, endPoint: .trailing))
             .cornerRadius(10)
             .padding(.horizontal)
             
             Spacer()
             
-            Button(action:{
-                currentView="home"
-            }){
+            Button(action: {
+                currentView = "home"
+            }) {
                 Text("Back to Home")
                     .font(.title2)
                     .frame(maxWidth: .infinity)
@@ -133,10 +136,11 @@ struct ProfileView:View{
             .padding(.horizontal)
         }
         .padding()
-        .onAppear{
+        .onAppear {
             loadProfileImage()
         }
     }
+
     private func loadProfileImage() {
         let key = "profileImagePath_\(userName)"
         if let path = UserDefaults.standard.string(forKey: key),
@@ -146,50 +150,37 @@ struct ProfileView:View{
             profileImage = nil
         }
     }
-    
+
     private func saveProfileImagePath(_ url: URL) {
         let key = "profileImagePath_\(userName)"
         UserDefaults.standard.set(url.path, forKey: key)
     }
-    
-    
-    private func selectProfileImage(){
-        let panel=NSOpenPanel()
-        panel.allowedContentTypes=[.image]
-        panel.allowsMultipleSelection=false
-        panel.canChooseDirectories=false
-        
-        if panel.runModal() == .OK,let url=panel.url{
-            if let image=NSImage(contentsOf: url){
-                profileImage=image
+
+    private func selectProfileImage() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        if panel.runModal() == .OK, let url = panel.url {
+            if let image = NSImage(contentsOf: url) {
+                profileImage = image
                 saveProfileImagePath(url)
             }
         }
     }
-    
-    private var totalQuizzesAttempted:Int{
-        return leaderboard.first(where: {$0.name==userName})?.topics.count ?? 0
-    }
-    
-    private var leaderboardRank:Int{
-        if let index=leaderboard.sorted(by: {
-            $0.topics.reduce(0){
-                $0+$1.score
-            }
-            > $1.topics.reduce(0){$0+$1.score}
-        }).firstIndex(where: {$0.name==userName}){
-            return index+1
-        }
-        return 0
+
+    private var totalQuizzesAttempted: Int {
+        return leaderboard.first(where: { $0.name == userName })?.topics.count ?? 0
     }
 }
 
-struct StatView:View{
-    var title:String
-    var value:String
-    
-    var body: some View{
-        VStack{
+struct StatView: View {
+    var title: String
+    var value: String
+
+    var body: some View {
+        VStack {
             Text(title)
                 .font(.headline)
                 .foregroundColor(.white)
@@ -202,6 +193,7 @@ struct StatView:View{
         .frame(maxWidth: .infinity)
     }
 }
+
 
 
 struct HomeView: View {
@@ -1129,12 +1121,6 @@ struct EndPageView: View {
         }
     }
 
-
-    private func saveBadges(for user: String) {
-        let key = "earnedBadges_\(user)"
-        UserDefaults.standard.set(earnedBadges, forKey: key)
-    }
-
     private func loadBadges(for user: String) {
         let key = "earnedBadges_\(user)"
         if let savedBadges = UserDefaults.standard.array(forKey: key) as? [String] {
@@ -1289,8 +1275,6 @@ struct BadgesView: View {
                                 .shadow(radius: 5)
                             )
                             .frame(width: 120, height: 140)
-                            .scaleEffect(earnedBadges.contains(badge) ? 1.1 : 1.0)
-                            .animation(.spring(), value: earnedBadges)
                         }
                     }
                     .padding()
@@ -1318,18 +1302,9 @@ struct BadgesView: View {
         }
         .padding()
         .background(LinearGradient(gradient: Gradient(colors: [.purple, .white]), startPoint: .top, endPoint: .bottom))
-        .onAppear {
-            loadBadges()
-        }
-    }
-    private func loadBadges() {
-        if let savedBadges = UserDefaults.standard.array(forKey: "earnedBadges") as? [String] {
-            earnedBadges = savedBadges
-        } else {
-            earnedBadges = []
-        }
     }
 }
+
 
 
 #Preview {
