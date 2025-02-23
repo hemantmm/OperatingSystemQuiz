@@ -33,7 +33,7 @@ struct ContentView: View {
     @State private var userName:String=""
     @State private var userInitial:String=""
     @State private var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]=[]
-    let totalQuizzes:Int=4
+    let totalQuizzes:Int=10
     @State private var earnedBadges:[String] = []
     @State private var profileImage: NSImage? = nil
     
@@ -859,6 +859,20 @@ let topics: [Topic] = [
         ]
     ),
     Topic(
+        name: "Thread",
+        description: "A task within a given process.",
+        questions: [
+            "If one thread opens a file with read privileges then?": ["other threads in the another process can also read from that file", "other threads in the same process can also read from that file", "any other thread can not read from that file", "all of the mentioned"],
+            "Which one of the following is not a valid state of a thread?": ["running", "parsing", "ready", "blocked"],
+            "A process can be?":["single threaded","multithreaded","both single threaded and multithreaded","none of the mentioned"]
+        ],
+        correctAnswers: [
+            "If one thread opens a file with read privileges then?": "other threads in the same process can also read from that file",
+            "Which one of the following is not a valid state of a thread?": "parsing",
+            "A process can be?": "both single threaded and multithreaded"
+        ]
+    ),
+    Topic(
         name: "Scheduling Algorithms",
         description: "Scheduling algorithms decide the order in which processes run.",
         questions: [
@@ -882,7 +896,74 @@ let topics: [Topic] = [
             "A problem encountered in multitasking when a process is perpetually denied necessary resources is called?": "Starvation"
         ]
     ),
-    
+    Topic(
+        name: "Virtual Memory",
+        description: "A temporary memory. It is a memory which is larger than the real memory. It is an address line memory",
+        questions: [
+            "Size of virtual memory depends on?": ["Address line", "Data Base", "Disc space", "All the above"],
+            "The instruction being executed, must be in?": ["physical memory", "logical memory", "physical & logical memory", "none of the mentioned"],
+            "Virtual memory is normally implemented by?": ["demand paging","buses","virtualization","all of the mentioned"]
+        ],
+        correctAnswers: [
+            "Size of virtual memory depends on?": "Address line",
+            "The instruction being executed, must be in?": "physical memory",
+            "Virtual memory is normally implemented by?": "demand paging"
+        ]
+    ),
+    Topic(
+        name: "Cache",
+        description: "A high-speed memory component used to store frequently accessed data and instructions. Caches are placed between the CPU and main memory (RAM). It has only 1 sign bit.",
+        questions: [
+            "Whenever the data is found in the cache memory it is called as?": ["HIT", "MISS", "FOUND", "ERROR"],
+            "When the data at a location in cache is different from the data located in the main memory, the cache is called?": ["Unique", "Inconsistent", "Variable", "Fault"],
+            "The number of sign bits in a 32-bit IEEE format is?": ["1","11","9","23"]
+        ],
+        correctAnswers: [
+            "Whenever the data is found in the cache memory it is called as?": "HIT",
+            "When the data at a location in cache is different from the data located in the main memory, the cache is called?": "Inconsistent",
+            "The number of sign bits in a 32-bit IEEE format is?": "1"
+        ]
+    ),
+    Topic(
+        name: "Semaphore",
+        description: "Semaphores are synchronisation primitives used to manage concurrent processes by controlling access to shared resources. A variable that controls access to shared resource.They are essential for preventing race conditions.",
+        questions: [
+            "Semaphore is a/an _______ to solve the critical section problem?": ["hardware for a system", "special program for a system", "integer variable", "none of the mentioned"],
+            "The signal operation of the semaphore basically works on the basic _______ system call?": ["continue()", "wakeup()", "getup()", "start()"]
+        ],
+        correctAnswers: [
+            "Semaphore is a/an _______ to solve the critical section problem?": "integer variable",
+            "The signal operation of the semaphore basically works on the basic _______ system call?": "wakeup()"
+        ]
+    ),
+    Topic(
+        name: "RAID",
+        description: "RAID (Redundant Array of Independent Disks) is like having backup copies of your important files at different places of several hard drives.",
+        questions: [
+            "In RAID level 4, one block read, accesses?": ["only one disk", "all disks simultaneously", "all disks sequentially", "none of the mentioned"],
+            "The overall I/O rate in RAID level 4 is?": ["low", "very low", "high", "none of the mentioned"],
+            "If a disk fails in RAID level ___________ rebuilding lost data is easiest?": ["1","2","3","4"]
+        ],
+        correctAnswers: [
+            "In RAID level 4, one block read, accesses?": "only one disk",
+            "The overall I/O rate in RAID level 4 is?": "high",
+            "If a disk fails in RAID level ___________ rebuilding lost data is easiest?": "1"
+        ]
+    ),
+    Topic(
+        name: "Producer-Consumer",
+        description: "The producer-consumer synchronisation is used to manage the communication between two software processors: producers and consumers. The producer generates data and sends it to the consumer, which processes the data. There are n buffers.",
+        questions: [
+            "The bounded buffer problem is also known as?": ["Readers – Writers problem", "Dining – Philosophers problem", "Producer – Consumer problem", "none of the mentioned"],
+            "In the bounded buffer problem?": ["there is only one buffer", "there are n buffers", "there are infinite buffers", "the buffer size is bounded"],
+            "The dining – philosophers problem will occur in case of?": ["5 philosophers and 5 chopsticks","4 philosophers and 5 chopsticks","3 philosophers and 5 chopsticks","6 philosophers and 5 chopsticks"]
+        ],
+        correctAnswers: [
+            "The bounded buffer problem is also known as?": "Producer – Consumer problem",
+            "In the bounded buffer problem?": "there are n buffers",
+            "The dining – philosophers problem will occur in case of?": "5 philosophers and 5 chopsticks"
+        ]
+    ),
 ]
 
 struct QuizView: View {
@@ -1429,3 +1510,7 @@ struct BadgesView: View {
 }
 
 //a task within a given process - thread
+
+
+
+
