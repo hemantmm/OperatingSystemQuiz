@@ -194,6 +194,7 @@ struct ProfileView:View{
     @State private var email:String=""
     var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]
     @State private var profileImage:NSImage?=nil
+    @State private var streakCount:Int=0
     
     var body: some View{
         VStack(spacing:20){
@@ -250,6 +251,12 @@ struct ProfileView:View{
             
             Spacer()
             
+            VStack{
+                Text("Daily streak: \(streakCount) days")
+                    .font(.headline)
+                    .foregroundColor(streakCount > 0 ? .orange : .gray)
+            }
+            
             Button(action:{
                 currentView="home"
             }){
@@ -268,6 +275,7 @@ struct ProfileView:View{
         .onAppear{
             fetchEmail()
             loadProfileImage()
+            loadStreak()
         }
     }
     
@@ -275,6 +283,10 @@ struct ProfileView:View{
         if let savedEmail=UserDefaults.standard.string(forKey: "userEmail"){
             email=savedEmail
         }
+    }
+    
+    private func loadStreak(){
+        streakCount=UserDefaults.standard.integer(forKey: "dailyQuizStreak")
     }
     
     private func loadProfileImage(){
@@ -630,6 +642,7 @@ struct DailyQuestionModeView: View {
         if questionIndex + 1 >= challengeQuestions.count {
             stopTimer()
             lastChallengeDate=Date()
+            updateStreak()
             currentView="home"
         } else {
             questionIndex += 1
@@ -637,6 +650,18 @@ struct DailyQuestionModeView: View {
             isAnswerCorrect = nil
             isAnswered = false
         }
+    }
+    
+    private func updateStreak() {
+        let lastDate=UserDefaults.standard.object(forKey: "lastChallengeDate") as? Date ?? Date.distantPast
+        let calendar=Calendar.current
+        let isConsecutiveDay=calendar.isDateInYesterday(lastDate)
+        
+        var streak=UserDefaults.standard.integer(forKey: "dailyQuizStreak")
+        streak=isConsecutiveDay ? streak+1 : 1
+        
+        UserDefaults.standard.set(streak, forKey: "dailyQuizStreak")
+        UserDefaults.standard.set(Date(),forKey: "lastChallengeDate")
     }
     
     func startTimer() {
@@ -685,49 +710,49 @@ struct TopicCardView: View{
     @State private var isVisible: Bool = false
     
     var body: some View {
-            HStack {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(topic.name)
-                        .font(.title2)
-                        .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
-                        .opacity(isVisible ? 1 : 0)
-                        .offset(y: isVisible ? 0 : -20)
-                        .animation(.easeOut(duration: 0.5), value: isVisible)
-                        .fontWeight(.heavy)
-                    
-                    Button(action: action) {
-                        Text("Learn More")
-                            .font(.subheadline)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .foregroundColor(colorScheme == .dark ? Color.black : Color.white)
-                            .background(colorScheme == .dark ? Color.white : Color.purple)
-                            .cornerRadius(10)
-                            .fontWeight(.bold)
-                    }
+        HStack {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(topic.name)
+                    .font(.title2)
+                    .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
                     .opacity(isVisible ? 1 : 0)
                     .offset(y: isVisible ? 0 : -20)
-                    .animation(.easeInOut(duration: 1.5), value: isVisible)
-                    .buttonStyle(PlainButtonStyle())
+                    .animation(.easeOut(duration: 0.5), value: isVisible)
+                    .fontWeight(.heavy)
+                
+                Button(action: action) {
+                    Text("Learn More")
+                        .font(.subheadline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .foregroundColor(colorScheme == .dark ? Color.black : Color.white)
+                        .background(colorScheme == .dark ? Color.white : Color.purple)
+                        .cornerRadius(10)
+                        .fontWeight(.bold)
                 }
-                .padding()
+                .opacity(isVisible ? 1 : 0)
+                .offset(y: isVisible ? 0 : -20)
+                .animation(.easeInOut(duration: 1.5), value: isVisible)
+                .buttonStyle(PlainButtonStyle())
             }
-            .background(
-                RoundedRectangle(cornerRadius: 15)
-                    .fill(colorScheme == .dark ? Color.yellow.opacity(0.7) : Color.white.opacity(0.8))
-//                    .fill(colorScheme == .dark ? Color.pink.opacity(0.7) : Color.white.opacity(0.8))
-                    .shadow(
-                        color: colorScheme == .dark ? Color.black.opacity(0.3) : Color.black.opacity(0.1),
-                        radius: 8, x: 0, y: 5
-                    )
-            )
-            .padding(.horizontal)
-            .onAppear {
-                withAnimation {
-                    isVisible = true
-                }
+            .padding()
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(colorScheme == .dark ? Color.yellow.opacity(0.7) : Color.white.opacity(0.8))
+            //                    .fill(colorScheme == .dark ? Color.pink.opacity(0.7) : Color.white.opacity(0.8))
+                .shadow(
+                    color: colorScheme == .dark ? Color.black.opacity(0.3) : Color.black.opacity(0.1),
+                    radius: 8, x: 0, y: 5
+                )
+        )
+        .padding(.horizontal)
+        .onAppear {
+            withAnimation {
+                isVisible = true
             }
         }
+    }
 }
 
 
