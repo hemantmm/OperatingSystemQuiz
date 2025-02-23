@@ -1068,6 +1068,7 @@ struct EndPageView: View {
                 .buttonStyle(PlainButtonStyle())
                 
                 Button("Home Page", systemImage: "house.fill") {
+                    saveScoreToLeaderboard()
                     currentView = "home"
                 }
                 .font(.headline)
