@@ -134,17 +134,9 @@ struct ProfileView:View{
         }
         .padding()
         .onAppear{
-//            fetchEmail()
             loadProfileImage()
         }
     }
-    
-//    private func fetchEmail(){
-//        if let savedEmail=UserDefaults.standard.string(forKey: "userEmail"){
-//            email=savedEmail
-//        }
-//    }
-    
     private func loadProfileImage() {
         let key = "profileImagePath_\(userName)"
         if let path = UserDefaults.standard.string(forKey: key),
@@ -223,6 +215,8 @@ struct HomeView: View {
     @State private var timerStarted: Bool = false
     @State private var showDropdown: Bool = false
     @Binding var profileImage:NSImage?
+    @State private var earnedBadges: [String] = UserDefaults.standard.array(forKey: "earnedBadges") as? [String] ?? []
+
 
     @AppStorage("lastChallengeDate") private var lastChallengeDate: Date?
 
@@ -1108,15 +1102,14 @@ struct EndPageView: View {
             loadBadges(for: userName)
         }
     }
-
     private func saveScoreToLeaderboard() {
         guard let topic = selectedTopic else { return }
 
         DispatchQueue.main.async {
-            if score == topic.questions.count {
+            if score == topic.questions.count { // Check for 100% score
                 if !earnedBadges.contains(topic.name) {
                     earnedBadges.append(topic.name)
-                    saveBadges(for: userName)
+                    UserDefaults.standard.set(earnedBadges, forKey: "earnedBadges") // Save globally
                 }
             }
 
@@ -1135,6 +1128,7 @@ struct EndPageView: View {
             }
         }
     }
+
 
     private func saveBadges(for user: String) {
         let key = "earnedBadges_\(user)"
@@ -1286,7 +1280,7 @@ struct BadgesView: View {
 
                                 Text(badge)
                                     .font(.headline)
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.purple)
                                     .padding(.top, 5)
                             }
                             .padding()
@@ -1325,13 +1319,11 @@ struct BadgesView: View {
         .padding()
         .background(LinearGradient(gradient: Gradient(colors: [.purple, .white]), startPoint: .top, endPoint: .bottom))
         .onAppear {
-            loadBadges(for: userName)
+            loadBadges()
         }
     }
-
-    private func loadBadges(for user: String) {
-        let key = "earnedBadges_\(user)"
-        if let savedBadges = UserDefaults.standard.array(forKey: key) as? [String] {
+    private func loadBadges() {
+        if let savedBadges = UserDefaults.standard.array(forKey: "earnedBadges") as? [String] {
             earnedBadges = savedBadges
         } else {
             earnedBadges = []
