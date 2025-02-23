@@ -424,6 +424,7 @@ struct DailyQuestionModeView: View {
                             .padding(.horizontal, 10)
                             .disabled(isAnswered)
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 
                 if let isAnswerCorrect = isAnswerCorrect {
