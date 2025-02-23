@@ -40,7 +40,7 @@ struct ContentView: View {
     var body: some View {
         VStack {
             if currentView=="login"{
-                LoginView(currentView: $currentView, userName: $userName, userInitial: $userInitial)
+                LoginView(currentView: $currentView, userName: $userName, userInitial: $userInitial,earnedBadges:$earnedBadges)
             }
             else if currentView=="home"{
                 HomeView(currentView: $currentView, selectedTopic: $selectedTopic, leaderboard: $leaderboard, userInitial: $userInitial, userName:$userName)
@@ -65,7 +65,7 @@ struct ContentView: View {
                 LeaderboardView(currentView: $currentView, leaderboard: leaderboard, totalQuizzes: totalQuizzes)
             }
             else if currentView=="badges"{
-                BadgesView(currentView: $currentView,earnedBadges:earnedBadges)
+                BadgesView(currentView: $currentView,earnedBadges:$earnedBadges,userName:userName)
             }
             else if currentView=="profile"{
                 ProfileView(currentView: $currentView, userName: userName, leaderboard: leaderboard)
@@ -86,6 +86,7 @@ struct LoginView: View {
     @State private var email:String=""
     @State private var errorMessage:String=""
     @State private var userAgreed:Bool=false
+    @Binding var earnedBadges:[String]
     
     @State private var showAlert:Bool=false
     
@@ -164,10 +165,6 @@ struct LoginView: View {
                         })
                     )
                 }
-                
-                //                .background(userName.isEmpty || email.isEmpty || !isValidEmail(email) ? Color.gray : Color.purple)
-                //                .disabled(userName.isEmpty || email.isEmpty || !isValidEmail(email))
-                
             }
             .padding()
         }
@@ -177,6 +174,11 @@ struct LoginView: View {
         if !userName.isEmpty && !email.isEmpty && isValidEmail(email){
             userInitial=String(userName.prefix(1)).uppercased()
             UserDefaults.standard.set(email,forKey: "userEmail")
+            UserDefaults.standard.set(userName,forKey: "userName")
+//            earnedBadges=UserDefaults.standard.array(forKey: "\(email)_badges") as? [String] ?? []
+            if let savedBadges = UserDefaults.standard.array(forKey: "earnedBadges") as? [String] {
+                earnedBadges = savedBadges
+            }
             showAlert=true
         }
     }
@@ -1131,17 +1133,14 @@ struct QuizView: View {
     }
 }
 
-
 struct EndPageView: View {
     @Binding var currentView: String?
     @Binding var earnedBadges: [String]
     let score: Int
-    let userName:String
-    @State private var isUserNameEntered:Bool=false
+    let userName: String
     @Binding var selectedTopic: Topic?
-    @Binding var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]
-    
-    
+    @Binding var leaderboard: [(name: String, topics: [(topic: String, score: Int)])]
+
     var body: some View {
         VStack {
             Text("🎉 Congratulations! 🎉")
@@ -1159,6 +1158,20 @@ struct EndPageView: View {
             Text("Thanks, \(userName)")
                 .font(.title2)
                 .padding()
+            
+            if score == selectedTopic?.questions.count, let topicName = selectedTopic?.name {
+                if earnedBadges.contains(topicName) {
+                    Text("✅ You already earned the badge for \(topicName)!")
+                        .font(.headline)
+                        .foregroundColor(.blue)
+                        .padding()
+                } else {
+                    Text("🏅 You've earned a new badge for \(topicName)! 🎖️")
+                        .font(.headline)
+                        .foregroundColor(.green)
+                        .padding()
+                }
+            }
 
             HStack(spacing: 20) {
                 Button("Retake Quiz", systemImage: "restart.circle") {
@@ -1181,9 +1194,9 @@ struct EndPageView: View {
                 .cornerRadius(10)
                 .buttonStyle(PlainButtonStyle())
                 
-                Button("View Leaderboard", systemImage: "list.number"){
+                Button("View Leaderboard", systemImage: "list.number") {
                     saveScoreToLeaderboard()
-                    currentView="leaderboard"
+                    currentView = "leaderboard"
                 }
                 .font(.headline)
                 .padding()
@@ -1193,19 +1206,21 @@ struct EndPageView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             .padding(.top)
-            
         }
-        
         .padding()
+        .onAppear {
+            loadBadges(for: userName) // Load badges for the logged-in user
+        }
     }
-    
+
     private func saveScoreToLeaderboard() {
         guard let topic = selectedTopic else { return }
-        
+
         DispatchQueue.main.async {
             if score == topic.questions.count {
                 if !earnedBadges.contains(topic.name) {
                     earnedBadges.append(topic.name)
+                    saveBadges(for: userName) // Save badges for the user
                 }
             }
 
@@ -1225,7 +1240,22 @@ struct EndPageView: View {
         }
     }
 
+    private func saveBadges(for user: String) {
+        let key = "earnedBadges_\(user)" // Unique key for each user
+        UserDefaults.standard.set(earnedBadges, forKey: key)
+    }
+
+    private func loadBadges(for user: String) {
+        let key = "earnedBadges_\(user)"
+        if let savedBadges = UserDefaults.standard.array(forKey: key) as? [String] {
+            earnedBadges = savedBadges
+        } else {
+            earnedBadges = [] // If no badges found, start fresh for new user
+        }
+    }
 }
+
+
 
 struct LeaderboardView: View {
     @Binding var currentView: String?
@@ -1315,15 +1345,18 @@ struct UserDetailView: View {
         }
     }
 }
-struct BadgesView:View {
+
+struct BadgesView: View {
     @Binding var currentView: String?
-    let earnedBadges: [String]
+    @Binding var earnedBadges: [String]
+    let userName: String  // Pass userName to track badges per user
+
     var body: some View {
-        VStack{
+        VStack {
             Text("Your Achievements")
                 .font(.largeTitle)
                 .fontWeight(.bold)
-                .padding(.top,20)
+                .padding(.top, 20)
                 .foregroundColor(.indigo)
 
             if earnedBadges.isEmpty {
@@ -1333,25 +1366,22 @@ struct BadgesView:View {
                         .scaledToFit()
                         .frame(width: 100, height: 100)
                         .foregroundColor(.gray.opacity(0.6))
+
                     Text("No badges earned yet!")
                         .font(.title2)
-                        .multilineTextAlignment(.center)
                         .foregroundColor(.gray.opacity(0.6))
 
-                    Text("Start taking quiz and earn your first badge!")
+                    Text("Start taking quizzes and earn your first badge!")
                         .font(.body)
-                        .multilineTextAlignment(.center)
                         .foregroundColor(.purple)
-                        .padding(.horizontal,20)
+                        .padding(.horizontal, 20)
                 }
-                .padding(.vertical,40)
-            }
-            else{
-                ScrollView{
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], spacing: 20){
-                        ForEach(earnedBadges,id:\.self){
-                            badge in
-                            VStack{
+                .padding(.vertical, 40)
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], spacing: 20) {
+                        ForEach(earnedBadges, id: \.self) { badge in
+                            VStack {
                                 Image(systemName: "medal.fill")
                                     .resizable()
                                     .scaledToFit()
@@ -1362,50 +1392,61 @@ struct BadgesView:View {
                                 Text(badge)
                                     .font(.headline)
                                     .foregroundColor(.primary)
-                                    .padding(.top,5)
+                                    .padding(.top, 5)
                             }
                             .padding()
-                            .background(                            RoundedRectangle(cornerRadius: 15)
+                            .background(RoundedRectangle(cornerRadius: 15)
                                 .fill(Color.white.opacity(0.9))
                                 .shadow(radius: 5)
                             )
                             .frame(width: 120, height: 140)
                             .scaleEffect(earnedBadges.contains(badge) ? 1.1 : 1.0)
-                            .animation(.spring(),value:earnedBadges)
+                            .animation(.spring(), value: earnedBadges)
                         }
                     }
                     .padding()
                 }
             }
-            Button(action:{
-                currentView="home"
-            }){
-                HStack{
+
+            Button(action: {
+                currentView = "home"
+            }) {
+                HStack {
                     Image(systemName: "house.fill")
-                    Text("Home page")
-//                    Image(systemName:"arrowshape.turn.up.backward.circle")
+                    Text("Home Page")
                 }
                 .font(.headline)
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(.yellow.opacity(0.7))
+                .background(Color.yellow.opacity(0.7))
                 .foregroundColor(.white)
                 .cornerRadius(10)
                 .shadow(radius: 3)
-
             }
-            .padding(.horizontal,20)
+            .padding(.horizontal, 20)
             .buttonStyle(PlainButtonStyle())
-            .padding(.top,20)
+            .padding(.top, 20)
         }
         .padding()
-        .background(LinearGradient(gradient:Gradient(colors:[.purple,.white]), startPoint: .top, endPoint: .bottom))
+        .background(LinearGradient(gradient: Gradient(colors: [.purple, .white]), startPoint: .top, endPoint: .bottom))
+        .onAppear {
+            loadBadges(for: userName)
+        }
+    }
+
+    private func loadBadges(for user: String) {
+        let key = "earnedBadges_\(user)"
+        if let savedBadges = UserDefaults.standard.array(forKey: key) as? [String] {
+            earnedBadges = savedBadges
+        } else {
+            earnedBadges = []
+        }
     }
 }
+
 
 #Preview {
     ContentView()
 }
 
 //a task within a given process - thread
-
