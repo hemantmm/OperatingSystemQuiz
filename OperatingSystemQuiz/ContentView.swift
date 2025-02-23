@@ -175,7 +175,6 @@ struct LoginView: View {
             userInitial=String(userName.prefix(1)).uppercased()
             UserDefaults.standard.set(email,forKey: "userEmail")
             UserDefaults.standard.set(userName,forKey: "userName")
-//            earnedBadges=UserDefaults.standard.array(forKey: "\(email)_badges") as? [String] ?? []
             if let savedBadges = UserDefaults.standard.array(forKey: "earnedBadges") as? [String] {
                 earnedBadges = savedBadges
             }
@@ -509,8 +508,9 @@ struct HomeView: View {
     }
 
     func updateRemainingTime() {
-        guard let lastDate = lastChallengeDate else {
-            remainingTime = 0
+        let userKey="lastChallengeDate_\(userName)"
+        guard var lastDate:Date = UserDefaults.standard.object(forKey: userKey) as? Date else {
+            remainingTime=0
             return
         }
         
@@ -538,8 +538,6 @@ func generateRandomColor() -> Color {
           blue: Double.random(in: 0...1)
     )
 }
-
-
 
 struct DailyQuestionModeView: View {
     @Binding var currentView: String?
@@ -643,7 +641,8 @@ struct DailyQuestionModeView: View {
     func nextQuestion() {
         if questionIndex + 1 >= challengeQuestions.count {
             stopTimer()
-            lastChallengeDate=Date()
+            let userKey="lastChallengeDate_\(userName)"
+            UserDefaults.standard.set(Date(), forKey: userKey)
             updateStreak()
             currentView="home"
         } else {
@@ -655,15 +654,17 @@ struct DailyQuestionModeView: View {
     }
     
     private func updateStreak() {
-        let lastDate=UserDefaults.standard.object(forKey: "lastChallengeDate") as? Date ?? Date.distantPast
+        let userKey="lastChallengeDate_\(userName)"
+        let lastDate=UserDefaults.standard.object(forKey: userKey) as? Date ?? Date.distantPast
         let calendar=Calendar.current
         let isConsecutiveDay=calendar.isDateInYesterday(lastDate)
         
-        var streak=UserDefaults.standard.integer(forKey: "dailyQuizStreak")
+        let streakKey="dailyQuizStreak_\(userName)"
+        var streak=UserDefaults.standard.integer(forKey: streakKey)
         streak=isConsecutiveDay ? streak+1 : 1
         
-        UserDefaults.standard.set(streak, forKey: "dailyQuizStreak")
-        UserDefaults.standard.set(Date(),forKey: "lastChallengeDate")
+        UserDefaults.standard.set(streak, forKey: streakKey)
+        UserDefaults.standard.set(Date(), forKey: userKey)
     }
     
     func startTimer() {
