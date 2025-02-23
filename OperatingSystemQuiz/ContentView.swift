@@ -8,7 +8,7 @@
 import SwiftUI
 import ConfettiSwiftUI
 import AVKit
-
+import PhotosUI
 
 extension View {
     func placeholder<Content: View>(
@@ -35,6 +35,7 @@ struct ContentView: View {
 //    @State private var leaderboard:[(name:String,score:Int, topics:[String])]=[]
     @State private var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]=[]
     let totalQuizzes:Int=4
+    @State private var earnedBadges:[String] = []
     
     var body: some View {
         VStack {
@@ -58,15 +59,24 @@ struct ContentView: View {
                 }
             }
             else if currentView=="endPage"{
-                EndPageView(currentView: $currentView, score: finalScore, userName: userName, selectedTopic: $selectedTopic, leaderboard: $leaderboard)
+                EndPageView(currentView: $currentView, earnedBadges:$earnedBadges, score: finalScore, userName: userName, selectedTopic: $selectedTopic, leaderboard: $leaderboard)
             }
             else if currentView=="leaderboard"{
                 LeaderboardView(currentView: $currentView, leaderboard: leaderboard, totalQuizzes: totalQuizzes)
+            }
+            else if currentView=="badges"{
+                BadgesView(currentView: $currentView,userName:userName)
+            }
+            else if currentView=="profile"{
+                ProfileView(currentView: $currentView, userName: userName, leaderboard: leaderboard)
             }
         }
         .padding()
     }
 }
+
+
+
 
 struct LoginView: View {
     
@@ -83,10 +93,6 @@ struct LoginView: View {
     
     var body: some View {
         ZStack{
-            //                Image("loginbackground")
-            //                .resizable()
-            //                .scaledToFill()
-            //                .edgesIgnoringSafeArea(.all)
             VStack{
                 Text("Login")
                     .font(.largeTitle)
@@ -134,7 +140,7 @@ struct LoginView: View {
                     .textFieldStyle(PlainTextFieldStyle())
                     .foregroundColor(.white)
                     .font(.title)
-                //                    .shadow(color: .red ,radius: 5,x:0,y:0)
+                //  .shadow(color: .red ,radius: 5,x:0,y:0)
                     .padding()
                 
                 Button(action: {
@@ -170,6 +176,7 @@ struct LoginView: View {
     private func handleuserLogo(){
         if !userName.isEmpty && !email.isEmpty && isValidEmail(email){
             userInitial=String(userName.prefix(1)).uppercased()
+            UserDefaults.standard.set(email,forKey: "userEmail")
             showAlert=true
         }
     }
@@ -178,6 +185,168 @@ struct LoginView: View {
         let emailRegEx="[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailTest=NSPredicate(format: "SELF MATCHES %@", emailRegEx)
         return emailTest.evaluate(with: email)
+    }
+}
+
+struct ProfileView:View{
+    @Binding var currentView:String?
+    var userName:String
+    @State private var email:String=""
+    var leaderboard:[(name:String,topics:[(topic:String,score:Int)])]
+    @State private var profileImage:NSImage?=nil
+    @State private var streakCount:Int=0
+    
+    var body: some View{
+        VStack(spacing:20){
+            Text("Profile")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.top,20)
+            
+            ZStack{
+                Circle()
+                    .fill(LinearGradient(gradient:Gradient(colors:[.purple,.blue]),startPoint: .topLeading,endPoint: .bottomTrailing))
+                    .frame(width: 100,height: 100)
+                    .shadow(radius: 5)
+                
+                if let image=profileImage{
+                    Image(nsImage:image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 100,height: 100)
+                    //                        .foregroundColor(.white)
+                        .clipShape(Circle())
+                }
+                else{
+                    
+                    Text(userName.prefix(1).uppercased())
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                }
+            }
+            .onTapGesture {
+                selectProfileImage()
+            }
+            VStack(spacing:5){
+                Text(userName)
+                    .font(.title)
+                    .fontWeight(.semibold)
+                
+                Text(email.isEmpty ? "No email provided" : email)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+            VStack(spacing: 10){
+                HStack{
+                    StatView(title:"Rank",value:"\(leaderboardRank)")
+                    Spacer()
+                    StatView(title:"Quiz Attempted",value:"\(totalQuizzesAttempted)")
+                }
+            }
+            .padding()
+            .background(LinearGradient(gradient: Gradient(colors: [.purple,.blue]), startPoint: .leading, endPoint: .trailing))
+            .cornerRadius(10)
+            .padding(.horizontal)
+            
+            Spacer()
+            
+            VStack{
+                Text("Daily streak: \(streakCount) days")
+                    .font(.headline)
+                    .foregroundColor(streakCount > 0 ? .orange : .gray)
+            }
+            
+            Button(action:{
+                currentView="home"
+            }){
+                Text("Back to Home")
+                    .font(.title2)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(LinearGradient(gradient: Gradient(colors: [.purple, .blue]), startPoint: .leading, endPoint: .trailing))
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                    .shadow(radius: 3)
+            }
+            .padding(.horizontal)
+        }
+        .padding()
+        .onAppear{
+            fetchEmail()
+            loadProfileImage()
+            loadStreak()
+        }
+    }
+    
+    private func fetchEmail(){
+        if let savedEmail=UserDefaults.standard.string(forKey: "userEmail"){
+            email=savedEmail
+        }
+    }
+    
+    private func loadStreak(){
+        streakCount=UserDefaults.standard.integer(forKey: "dailyQuizStreak")
+    }
+    
+    private func loadProfileImage(){
+        if let path=UserDefaults.standard.string(forKey: "profileImagePath"),
+           let image=NSImage(contentsOfFile: path){
+            profileImage=image
+        }
+    }
+    
+    private func saveProfileImagePath(_ url:URL){
+        UserDefaults.standard.set(url.path,forKey: "profileImagePath")
+    }
+    
+    private func selectProfileImage(){
+        let panel=NSOpenPanel()
+        panel.allowedContentTypes=[.image]
+        panel.allowsMultipleSelection=false
+        panel.canChooseDirectories=false
+        
+        if panel.runModal() == .OK,let url=panel.url{
+            if let image=NSImage(contentsOf: url){
+                profileImage=image
+                saveProfileImagePath(url)
+            }
+        }
+    }
+    
+    private var totalQuizzesAttempted:Int{
+        return leaderboard.first(where: {$0.name==userName})?.topics.count ?? 0
+    }
+    
+    private var leaderboardRank:Int{
+        if let index=leaderboard.sorted(by: {
+            $0.topics.reduce(0){
+                $0+$1.score
+            }
+            > $1.topics.reduce(0){$0+$1.score}
+        }).firstIndex(where: {$0.name==userName}){
+            return index+1
+        }
+        return 0
+    }
+}
+
+struct StatView:View{
+    var title:String
+    var value:String
+    
+    var body: some View{
+        VStack{
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -193,6 +362,7 @@ struct HomeView: View {
     @State private var timerStarted: Bool = false
     @State private var showDropdown: Bool = false
     @State private var userLogoColor:Color=generateRandomColor()
+    @State private var profileImage:NSImage?=nil
 
     @AppStorage("lastChallengeDate") private var lastChallengeDate: Date?
 
@@ -204,15 +374,25 @@ struct HomeView: View {
             Button(action: {
                 showDropdown.toggle()
             }) {
-                Circle()
-                    .fill(userLogoColor)
-                    .frame(width: 40, height: 40)
-                    .overlay(
-                        Text(userInitial)
-                            .font(.headline)
-                            .fontWeight(.heavy)
-                            .foregroundColor(.purple)
-                    )
+                if let image=profileImage{
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(.white,lineWidth: 3))
+                }
+                else{
+                    Circle()
+                        .fill(.black)
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Text(userInitial)
+                                .font(.headline)
+                                .fontWeight(.heavy)
+                                .foregroundColor(.purple)
+                        )
+                }
             }
             .buttonStyle(PlainButtonStyle())
             .padding()
@@ -224,9 +404,22 @@ struct HomeView: View {
                         userLogoColor=generateRandomColor()
                         currentView = "login"
                     }
+                    .font(.headline)
                     .padding()
-                    .background(Color.red.opacity(0.2))
+                    .background(.white)
+                    .foregroundColor(.purple)
                     .cornerRadius(10)
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button("Profile", systemImage: "person.crop.circle") {
+                        currentView = "profile"
+                    }
+                    .font(.headline)
+                    .padding()
+                    .background(.white)
+                    .foregroundColor(.purple)
+                    .cornerRadius(10)
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding()
             }
@@ -256,7 +449,7 @@ struct HomeView: View {
                     startTimer()
                 }
 
-                Button("Daily Question Mode") {
+                Button("Daily Question Mode", systemImage:"questionmark.circle") {
                     currentView = "dailyQuestionMode"
                 }
                 .font(.headline)
@@ -269,11 +462,12 @@ struct HomeView: View {
                 if remainingTime > 0 {
                     Text("Next challenge available in \(remainingTime) seconds")
                         .font(.subheadline)
-                        .foregroundColor(.red)
+                        .foregroundColor(.white)
+                        .fontWeight(.semibold)
                         .padding()
                 }
 
-                Button("View Leaderboard") {
+                Button("View Leaderboard",systemImage: "list.number") {
                     currentView = "leaderboard"
                 }
                 .font(.headline)
@@ -283,13 +477,34 @@ struct HomeView: View {
                 .cornerRadius(10)
                 .buttonStyle(PlainButtonStyle())
                 .fontWeight(.bold)
+                
+                Button("Badges", systemImage: "trophy.circle") {
+                    currentView = "badges"
+                }
+                .font(.headline)
+                .padding()
+                .background(.white)
+                .foregroundColor(.purple)
+                .cornerRadius(10)
+                .buttonStyle(PlainButtonStyle())
+                
             }
             .padding()
+            .onAppear{
+                loadProfileImage()
+            }
         }
         .background(.purple)
+        .cornerRadius(10)
 //        .background(.orange)
     }
     
+    private func loadProfileImage(){
+        if let path=UserDefaults.standard.string(forKey: "profileImagePath"),
+           let image=NSImage(contentsOfFile: path){
+            profileImage=image
+        }
+    }
 
     func updateRemainingTime() {
         guard let lastDate = lastChallengeDate else {
@@ -427,6 +642,7 @@ struct DailyQuestionModeView: View {
         if questionIndex + 1 >= challengeQuestions.count {
             stopTimer()
             lastChallengeDate=Date()
+            updateStreak()
             currentView="home"
         } else {
             questionIndex += 1
@@ -434,6 +650,18 @@ struct DailyQuestionModeView: View {
             isAnswerCorrect = nil
             isAnswered = false
         }
+    }
+    
+    private func updateStreak() {
+        let lastDate=UserDefaults.standard.object(forKey: "lastChallengeDate") as? Date ?? Date.distantPast
+        let calendar=Calendar.current
+        let isConsecutiveDay=calendar.isDateInYesterday(lastDate)
+        
+        var streak=UserDefaults.standard.integer(forKey: "dailyQuizStreak")
+        streak=isConsecutiveDay ? streak+1 : 1
+        
+        UserDefaults.standard.set(streak, forKey: "dailyQuizStreak")
+        UserDefaults.standard.set(Date(),forKey: "lastChallengeDate")
     }
     
     func startTimer() {
@@ -482,49 +710,49 @@ struct TopicCardView: View{
     @State private var isVisible: Bool = false
     
     var body: some View {
-            HStack {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(topic.name)
-                        .font(.title2)
-                        .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
-                        .opacity(isVisible ? 1 : 0)
-                        .offset(y: isVisible ? 0 : -20)
-                        .animation(.easeOut(duration: 0.5), value: isVisible)
-                        .fontWeight(.heavy)
-                    
-                    Button(action: action) {
-                        Text("Learn More")
-                            .font(.subheadline)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .foregroundColor(colorScheme == .dark ? Color.black : Color.white)
-                            .background(colorScheme == .dark ? Color.white : Color.purple)
-                            .cornerRadius(10)
-                            .fontWeight(.bold)
-                    }
+        HStack {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(topic.name)
+                    .font(.title2)
+                    .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
                     .opacity(isVisible ? 1 : 0)
                     .offset(y: isVisible ? 0 : -20)
-                    .animation(.easeInOut(duration: 1.5), value: isVisible)
-                    .buttonStyle(PlainButtonStyle())
+                    .animation(.easeOut(duration: 0.5), value: isVisible)
+                    .fontWeight(.heavy)
+                
+                Button(action: action) {
+                    Text("Learn More")
+                        .font(.subheadline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .foregroundColor(colorScheme == .dark ? Color.black : Color.white)
+                        .background(colorScheme == .dark ? Color.white : Color.purple)
+                        .cornerRadius(10)
+                        .fontWeight(.bold)
                 }
-                .padding()
+                .opacity(isVisible ? 1 : 0)
+                .offset(y: isVisible ? 0 : -20)
+                .animation(.easeInOut(duration: 1.5), value: isVisible)
+                .buttonStyle(PlainButtonStyle())
             }
-            .background(
-                RoundedRectangle(cornerRadius: 15)
-                    .fill(colorScheme == .dark ? Color.yellow.opacity(0.7) : Color.white.opacity(0.8))
-//                    .fill(colorScheme == .dark ? Color.pink.opacity(0.7) : Color.white.opacity(0.8))
-                    .shadow(
-                        color: colorScheme == .dark ? Color.black.opacity(0.3) : Color.black.opacity(0.1),
-                        radius: 8, x: 0, y: 5
-                    )
-            )
-            .padding(.horizontal)
-            .onAppear {
-                withAnimation {
-                    isVisible = true
-                }
+            .padding()
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(colorScheme == .dark ? Color.yellow.opacity(0.7) : Color.white.opacity(0.8))
+            //                    .fill(colorScheme == .dark ? Color.pink.opacity(0.7) : Color.white.opacity(0.8))
+                .shadow(
+                    color: colorScheme == .dark ? Color.black.opacity(0.3) : Color.black.opacity(0.1),
+                    radius: 8, x: 0, y: 5
+                )
+        )
+        .padding(.horizontal)
+        .onAppear {
+            withAnimation {
+                isVisible = true
             }
         }
+    }
 }
 
 
@@ -580,53 +808,6 @@ struct TopicDetailView:View {
         }
     }
 }
-
-
-//struct TopicDetailView: View {
-//    let topic: Topic
-//    @Binding var currentView: String?
-//
-//    var body: some View {
-//        HStack {
-//            // Left side: Text
-//            VStack(alignment: .leading, spacing: 20) {
-//                Text(topic.name)
-//                    .font(.largeTitle)
-//                    .fontWeight(.bold)
-//                    .foregroundColor(.purple)
-//                Text(topic.description)
-//                    .font(.body)
-//                    .foregroundColor(.black)
-//
-//                Button("Take Quiz") {
-//                    currentView = "quiz"
-//                }
-//                .font(.headline)
-//                .padding()
-//                .foregroundColor(.white)
-//                .background(Color.purple)
-//                .cornerRadius(10)
-//                .buttonStyle(PlainButtonStyle())
-//            }
-//            .padding()
-//            .frame(maxWidth: .infinity, alignment: .leading)
-//
-//            // Right side: Video
-//            if let url = Bundle.main.url(forResource: "\(topic.name.lowercased())_background", withExtension: "mp4") {
-//                VideoPlayer(player: AVPlayer(url: url))
-//                    .frame(width: 300, height: 300)
-//                    .cornerRadius(10)
-//                    .padding()
-//            } else {
-//                Text("Video not found")
-//                    .foregroundColor(.red)
-//                    .padding()
-//            }
-//        }
-//        .padding()
-//    }
-//}
-
 
 struct VideoPlayerView: View {
     let videoName:String
@@ -843,35 +1024,10 @@ struct QuizView: View {
                         }
                     }
                 
-                if hintAvailable && !hintUsed {
-                    Button(action: {
-                        hintUsed = true
-                        hintText = "Here's a hint: \(getHint(for: question))"
-                        adjustedScore = max(adjustedScore - 1, 0)
-                    }) {
-                        Text("Hint")
-                            .font(.headline)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .foregroundColor(.yellow)
-                    .background(Color.black)
-                    .cornerRadius(10)
-                    .padding(.bottom, 10)
-                }
-                
-                if let hintText = hintText {
-                    Text(hintText)
-                        .font(.body)
-                        .foregroundColor(.orange)
-                        .padding(.bottom)
-                }
             }
             .padding()
             .onAppear {
                 startTimer()
-                startHintTimer()
                 animateQuestionsAndOptions()
             }
             .onDisappear {
@@ -929,7 +1085,6 @@ struct QuizView: View {
             hintUsed = false
             hintAvailable=false
             hintText = nil
-            startHintTimer()
             remainingAnswers=nil
         }
     }
@@ -947,14 +1102,6 @@ struct QuizView: View {
     func stopTimer() {
         timer?.invalidate()
         timer = nil
-    }
-    
-    func startHintTimer() {
-        DispatchQueue.main.asyncAfter(deadline: .now()+5){
-            if !isAnswered{
-                hintAvailable=true
-            }
-        }
     }
     
     func skipQuestions() {
@@ -987,6 +1134,7 @@ struct QuizView: View {
 
 struct EndPageView: View {
     @Binding var currentView: String?
+    @Binding var earnedBadges: [String]
     let score: Int
     let userName:String
     @State private var isUserNameEntered:Bool=false
@@ -1050,22 +1198,33 @@ struct EndPageView: View {
         
         .padding()
     }
+    
     private func saveScoreToLeaderboard() {
-        guard let topic=selectedTopic else{
-            return
-        }
-        if let userIndex=leaderboard.firstIndex(where: {$0.name == userName}){
-            if let topicIndex=leaderboard[userIndex].topics.firstIndex(where: {$0.topic == topic.name}){
-                leaderboard[userIndex].topics[topicIndex].score=score
+        guard let topic = selectedTopic else { return }
+        
+        DispatchQueue.main.async {
+            if score == topic.questions.count {
+                if !earnedBadges.contains(topic.name) {
+                    earnedBadges.append(topic.name)
+                }
             }
-            else{
-                leaderboard[userIndex].topics.append((topic: topic.name, score:score))
+
+            if let userIndex = leaderboard.firstIndex(where: { $0.name == userName }) {
+                if let topicIndex = leaderboard[userIndex].topics.firstIndex(where: { $0.topic == topic.name }) {
+                    leaderboard[userIndex].topics[topicIndex].score = score
+                } else {
+                    leaderboard[userIndex].topics.append((topic: topic.name, score: score))
+                }
+            } else {
+                leaderboard.append((name: userName, topics: [(topic: topic.name, score: score)]))
             }
-        }
-        else{
-            leaderboard.append((name: userName, topics:[(topic:topic.name, score:score)]))
+
+            leaderboard.sort {
+                $0.topics.reduce(0) { $0 + $1.score } > $1.topics.reduce(0) { $0 + $1.score }
+            }
         }
     }
+
 }
 
 struct LeaderboardView: View {
@@ -1074,34 +1233,34 @@ struct LeaderboardView: View {
     let totalQuizzes: Int
     @State private var selectedUser: UserDetail?
     @State private var isPopoverPresented: Bool = false
-
+    
     var body: some View {
         VStack {
             Text("Leaderboard")
                 .font(.largeTitle)
                 .padding()
-
-            List{
-                ForEach(leaderboard, id:\.name){
-                    entry in
-                    Button{
-                        let quizzes=entry.topics.map{
-                            QuizDetail(topic:$0.topic, score:$0.score)
+            List {
+                ForEach(leaderboard.sorted(by: {
+                    $0.topics.reduce(0) { $0 + $1.score } > $1.topics.reduce(0) { $0 + $1.score }
+                }), id: \.name) { entry in
+                    Button {
+                        let quizzes = entry.topics.map {
+                            QuizDetail(topic: $0.topic, score: $0.score)
                         }
-                        selectedUser=UserDetail(name:entry.name,quizzes:quizzes)
-                        isPopoverPresented=true
-                    }
-                label: {
-                    HStack{
-                        Text(entry.name)
-                            .font(.headline)
-                        Spacer()
-                        Text("\(entry.topics.count)/\(totalQuizzes)")
-                            .font(.subheadline)
-                    }
+                        selectedUser = UserDetail(name: entry.name, quizzes: quizzes)
+                        isPopoverPresented = true
+                    } label: {
+                        HStack {
+                            Text(entry.name)
+                                .font(.headline)
+                            Spacer()
+                            Text("\(entry.topics.count)/\(totalQuizzes)")
+                                .font(.subheadline)
+                        }
                     }
                 }
             }
+            
             .frame(minHeight: 400)
             .popover(isPresented: $isPopoverPresented) {
                 if let user=selectedUser{
@@ -1157,11 +1316,103 @@ struct UserDetailView: View {
     }
 }
 
-
+struct BadgesView: View {
+    @Binding var currentView: String?
+    let userName: String
+    @State private var earnedBadges: [String] = []
+    
+    var body: some View {
+        VStack {
+            Text("Your Achievements")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.top, 20)
+                .foregroundColor(.white)
+            
+            if earnedBadges.isEmpty {
+                VStack(spacing: 15) {
+                    Image(systemName: "star.slash")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
+                        .foregroundColor(.white)
+                    
+                    Text("No badges earned yet!")
+                        .font(.title2)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.white)
+                    
+                    Text("Start taking quizzes and earn your first badge!")
+                        .font(.body)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.purple)
+                        .padding(.horizontal, 20)
+                        .fontWeight(.bold)
+                }
+                .padding(.vertical, 40)
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], spacing: 20) {
+                        ForEach(earnedBadges, id: \.self) { badge in
+                            VStack {
+                                Image(systemName: "medal.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 80, height: 80)
+                                    .foregroundColor(.yellow)
+                                    .shadow(radius: 5)
+                                
+                                Text(badge)
+                                    .font(.headline)
+                                    .foregroundColor(.purple)
+                                    .padding(.top, 5)
+                            }
+                            .padding()
+                            .background(RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.white.opacity(0.9))
+                                .shadow(radius: 5))
+                            .frame(width: 120, height: 140)
+                        }
+                    }
+                    .padding()
+                }
+            }
+            
+            Button(action: {
+                currentView = "home"
+            }) {
+                HStack {
+                    Image(systemName: "house.fill")
+                    Text("Home Page")
+                }
+                .font(.headline)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(.yellow.opacity(0.7))
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                .shadow(radius: 3)
+                .fontWeight(.heavy)
+            }
+            .padding(.horizontal, 20)
+            .buttonStyle(PlainButtonStyle())
+            .padding(.top, 20)
+        }
+        .padding()
+        .background(LinearGradient(gradient: Gradient(colors: [.purple, .white]), startPoint: .top, endPoint: .bottom))
+        .onAppear {
+            loadBadges()
+        }
+    }
+    
+    private func loadBadges() {
+        let userBadgeKey = "badges_\(userName)"
+        earnedBadges = UserDefaults.standard.stringArray(forKey: userBadgeKey) ?? []
+    }
+}
 
 #Preview {
     ContentView()
 }
 
-//a task within a given process
-
+//a task within a given process - thread
